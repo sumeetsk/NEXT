@@ -69,7 +69,7 @@ class ActiveRanking(object):
         #    targets_list[0]['flag'] = 0
         #    targets_list[1]['flag'] = 1
 
-        return_dict = {'target_indices':targets_list}
+        return_dict = {'target_indices':targets_list, 'quicksort_id':alg_response[3]}
 
         experiment_dict = butler.experiment.get()
 
@@ -87,14 +87,14 @@ class ActiveRanking(object):
         targets = query['target_indices']
         left_id = target[0]['target']
         right_id = target[1]['target']
-                
+        quicksort_id = query['quicksort_id']        
         winner_id = args['target_winner']
         butler.experiment.increment(key='num_reported_answers_for_' + query['alg_label'])
 
         alg({'left_id':left_id, 
              'right_id':right_id, 
              'winner_id':winner_id})
-        return {'winner_id':winner_id}
+        return {'winner_id':winner_id, 'quicksort_id':quicksort_id}
                 
 
     def getModel(self, butler, alg, args):
