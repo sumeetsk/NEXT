@@ -53,7 +53,10 @@ class Quicksort:
         ranking = np.array(butler.algorithms.get(key='ranking'))
 
         if not ((arr[ptr], arr[pivot])==(left_id, right_id) or (arr[ptr], arr[pivot])==(right_id, left_id)):
-        #not the query we're looking for
+        #not the query we're looking for, pass
+            f = open('Quicksort.log','a')
+            f.write("In Quicksort:processAnswer: Query does not match what I'm expecting")
+            f.close()
             return True
 
         if winner_id==arr[pivot]:
