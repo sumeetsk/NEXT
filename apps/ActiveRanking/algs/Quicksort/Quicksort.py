@@ -55,6 +55,8 @@ class Quicksort:
         for rownbr in range(len(arrlist)-1):
             f.write(str(arrlist[rownbr])+',')
         f.write(str(arrlist[rownbr+1])+'\n')
+        utils.debug_print('quicksort_id:'+str(quicksort_id))
+        f.write('quicksort_id:'+str(quicksort_id)+'\n')
         f.close()
         llist = butler.algorithms.get(key='llist')
         l = llist[quicksort_id]

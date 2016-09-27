@@ -93,7 +93,8 @@ class ActiveRanking(object):
 
         alg({'left_id':left_id, 
              'right_id':right_id, 
-             'winner_id':winner_id})
+             'winner_id':winner_id,
+             'quicksort_id':quicksort_id})
         return {'winner_id':winner_id, 'quicksort_id':quicksort_id}
                 
 

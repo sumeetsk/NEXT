@@ -34,9 +34,9 @@ class AR_Random:
         while alt_index == index:
             alt_index = np.random.randint(n)
 
-        return [index, alt_index]
+        return [index, alt_index, 0]
 
-    def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0):
+    def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_id=0):
         utils.debug_print('In AR_Random: processAnswer')
         utils.debug_print('left_id:'+str(left_id))
         utils.debug_print('right_id:'+str(right_id))
