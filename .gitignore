@@ -1,0 +1,31 @@
+# Mac
+.DS_Store
+
+# Maven
+log/
+target/
+
+# Emacs
+*~
+
+# Python
+*.pyc
+
+# nohup
+nohup.out
+
+# Log files
+*.log
+
+# EC2 key files
+*.pem
+
+# backup files
+*.bak
+
+#floo
+.floo
+.flooignore
+
+# testing results are stored here
+.cache

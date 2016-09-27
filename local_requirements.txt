@@ -1,0 +1,4 @@
+boto
+requests
+ply
+joblib

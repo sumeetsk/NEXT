@@ -1,0 +1,12 @@
+Flask
+Flask-Restful
+Flask-Login
+gunicorn
+pymongo
+redis
+celery
+boto
+greenlet
+mpld3
+pyyaml
+ply
