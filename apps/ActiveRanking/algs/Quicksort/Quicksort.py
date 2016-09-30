@@ -19,17 +19,36 @@ class Quicksort:
             arrlist.append(list(np.random.permutation(range(n))))
         butler.algorithms.set(key='arrlist', value=arrlist)
 
-        butler.algorithms.set(key='llist', value=[0]*nquicksorts)
-        butler.algorithms.set(key='hlist', value=[n-1]*nquicksorts)
-        butler.algorithms.set(key='ptrlist', value=[0]*nquicksorts)
-        butler.algorithms.set(key='lmaxlist', value=[-1]*nquicksorts)
-        butler.algorithms.set(key='pivotlist', value=[n-1]*nquicksorts)
-        butler.algorithms.set(key='stacklist', value= [[]]*nquicksorts)
-
-        rankinglist = []
+        queryqueuesallqs = [[]]*nquicksorts #list of queryqueues for all the quicksorts
+        stackparametersallqs = []
         for _ in range(nquicksorts):
-            rankinglist.append(np.zeros(n))
-        butler.algorithms.set(key='rankinglist', value=rankinglist)
+            stackparametersallqs.append({})
+        for c1 in range(nquicksorts):
+            arr = arrlist[c1]
+            l = 0
+            h = n
+            pivot = arr[n-1]
+            smallerthanpivot = []
+            largerthanpivot = []
+            stackvalue = {'l':l, 'h':n, 'pivot':pivot, 'smallerthanpivot':smallerthanpivot, 'largerthanpivot':largerthanpivot, 'count':0}
+            stackkey = utils.getNewUID()
+            stacks = {stackkey: stackvalue}
+            stackparametersallqs[c1] = stacks
+            queryqueue = []
+            for c2 in range(len(arr)-1):
+                queryqueue.append([arr[c2], pivot, [c1,stackkey]])
+                #each query maintains a quicksort_id and a stack index (which is stackkey in the beginning)
+            queryqueuesallqs[c1] = queryqueue
+
+        butler.algorithms.set(key='stackparametersallqs', value= stackparametersallqs)
+        butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
+        waitingforresponse = []
+        for _ in range(nquicksorts):
+            waitingforresponse.append({})
+        butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
+
+        ranking = np.zeros(n)
+        butler.algorithms.set(key='ranking', value=ranking)
         return True
 
     def getQuery(self, butler, participant_uid):
@@ -37,101 +56,113 @@ class Quicksort:
         quicksort_id = np.random.randint(nquicksorts)
         arrlist = butler.algorithms.get(key='arrlist')
         arr = arrlist[quicksort_id]
-        ptrlist = butler.algorithms.get(key='ptrlist')
-        ptr = ptrlist[quicksort_id]
-        pivotlist = butler.algorithms.get(key='pivotlist')
-        pivot = pivotlist[quicksort_id]
-        return [arr[ptr], arr[pivot], quicksort_id]
+        queryqueuesallqs = butler.algorithms.get(key='queryqueuesallqs')
+        while queryqueuesallqs[quicksort_id] == []:
+            #sumeet: if all queues empty, what?
+            quicksort_id = np.random.randint(nquicksorts)
 
-    def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_id=0):
+        query = queryqueuesallqs[quicksort_id].pop(0)
+        butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
+
+        waitingforresponse = butler.algorithms.get(key='waitingforresponse')
+        waitingforresponse[quicksort_id][str(query[0])+','+str(query[1])] = query
+        butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
+        return query
+
+    def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
+#left_id is actually left item, similarly right_id, winner_id
         utils.debug_print('In Quicksort: processAnswer')
         utils.debug_print('left_id:'+str(left_id))
         utils.debug_print('right_id:'+str(right_id))
+        quicksort_id = quicksort_data[0]
         arrlist = butler.algorithms.get(key='arrlist')
+        queryqueuesallqs = butler.algorithms.get(key='queryqueuesallqs')
+        stackparametersallqs = butler.algorithms.get('stackparametersallqs')
+        waitingforresponse = butler.algorithms.get('waitingforresponse')
+
         arr = np.array(arrlist[quicksort_id])
-        utils.debug_print('old arrlist:'+str(arrlist))
-        f = open('Quicksort.log','a')
-        f.write('Old arr \n')
-        for rownbr in range(len(arrlist)-1):
-            f.write(str(arrlist[rownbr])+',')
-        f.write(str(arrlist[rownbr+1])+'\n')
-        utils.debug_print('quicksort_id:'+str(quicksort_id))
-        f.write('quicksort_id:'+str(quicksort_id)+'\n')
-        f.close()
-        llist = butler.algorithms.get(key='llist')
-        l = llist[quicksort_id]
-        hlist = butler.algorithms.get(key='hlist')
-        h = hlist[quicksort_id]
-        lmaxlist = butler.algorithms.get(key='lmaxlist')
-        lmax = lmaxlist[quicksort_id]
-        pivotlist = butler.algorithms.get(key='pivotlist')
-        pivot = pivotlist[quicksort_id]
-        stacklist = butler.algorithms.get(key='stacklist')
-        stack = stacklist[quicksort_id]
-        ptrlist = butler.algorithms.get(key='ptrlist')
-        ptr = ptrlist[quicksort_id]
-        rankinglist = butler.algorithms.get(key='rankinglist')
-        ranking = np.array(rankinglist[quicksort_id])
 
-        if not ((arr[ptr], arr[pivot])==(left_id, right_id) or (arr[ptr], arr[pivot])==(right_id, left_id)):
-        #not the query we're looking for, pass
-            f = open('Quicksort.log','a')
-            f.write("In Quicksort:processAnswer: Query does not match what I'm expecting")
-            f.close()
+        stackkey = quicksort_data[1]
+
+        #utils.debug_print('quicksort_id:'+str(quicksort_id))
+        stacks = stackparametersallqs[quicksort_id] #dictionary of stacks for current quicksort_id
+
+        try:
+            query = waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
+        except KeyError:
+            #this means that the query response has been received from a different user maybe, and this response should be ignored. This shouldn't happen too often.
+            utils.debug_print('Query not found')
             return True
+        
+        del waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
+        #if waitingforresponse is empty, it means there might be queries that have not been sent out to users so far.
 
-        if winner_id==arr[pivot]:
-            lmax = lmax + 1
-            arr[lmax],arr[ptr] = arr[ptr],arr[lmax]
-        ptr = ptr + 1
-        if ptr == h:
-            arr[lmax+1],arr[pivot] = arr[pivot],arr[lmax+1]
-            if l<lmax:
-                stack.append([l,lmax])
-            if lmax+2<h:
-                stack.append([lmax+2,h])
-            if stack==[]:
-                ranking = ranking + np.array(arr)
-                n = len(arr)
-                arr = np.random.permutation(arr)
-                l = 0
-                h = n-1
-                ptr = 0
-                lmax = -1
-                pivot = n-1
-                stack = []
-            else:
-                x = stack.pop(0)
-                l = x[0]
-                h = x[1]
-                lmax = l-1
-                pivot = h
-                ptr = l
+        curquerystackvalue = stacks[stackkey]
+        if winner_id==left_id:
+            loser = right_id
+        else:
+            loser = left_id
 
-        arrlist[quicksort_id] = list(arr)
-        llist[quicksort_id] = l
-        hlist[quicksort_id] = h
-        lmaxlist[quicksort_id] = lmax
-        pivotlist[quicksort_id] = pivot
-        stacklist[quicksort_id] = stack
-        ptrlist[quicksort_id] = ptr
-        rankinglist[quicksort_id] = list(ranking)
+        if winner_id==curquerystackvalue['pivot']:
+            curquerystackvalue['smallerthanpivot'].append(loser)
+        else:
+            curquerystackvalue['largerthanpivot'].append(winner_id)
+
+        curquerystackvalue['count'] = curquerystackvalue['count']+1
+        if curquerystackvalue['count'] == curquerystackvalue['h']-curquerystackvalue['l']-1:
+            del stackparametersallqs[quicksort_id][stackkey]
+            l = curquerystackvalue['l']
+            h = curquerystackvalue['h']
+            smallerthanpivot = curquerystackvalue['smallerthanpivot']
+            largerthanpivot = curquerystackvalue['largerthanpivot']
+            pivot = curquerystackvalue['pivot']
+
+            #update array
+            arr[l:h] = smallerthanpivot + [pivot] + largerthanpivot
+            arrlist[quicksort_id] = list(arr)
+            butler.algorithms.set(key='arrlist', value=arrlist)
+
+            #create two new stacks
+            if len(smallerthanpivot) > 1:
+                newstackvalue = {'l':l, 'h':l+len(smallerthanpivot), 'pivot':smallerthanpivot[-1], 'smallerthanpivot':[], 'largerthanpivot':[], 'count':0}
+                newstackkey = utils.getNewUID()
+                stackparametersallqs[quicksort_id][newstackkey] = newstackvalue
+                for c3 in range(len(smallerthanpivot)-1):
+                    queryqueuesallqs[quicksort_id].append([smallerthanpivot[c3], smallerthanpivot[-1], [quicksort_id, newstackkey]])
+            if len(largerthanpivot) > 1:
+                newstackvalue = {'l': l+len(smallerthanpivot)+1, 'h':h, 'pivot':largerthanpivot[-1], 'smallerthanpivot':[], 'largerthanpivot':[], 'count':0}
+                newstackkey = utils.getNewUID()
+                stackparametersallqs[quicksort_id][newstackkey] = newstackvalue
+                for c3 in range(len(largerthanpivot)-1):
+                    queryqueuesallqs[quicksort_id].append([largerthanpivot[c3], largerthanpivot[-1], [quicksort_id, newstackkey]])
+
+            if stackparametersallqs[quicksort_id] == {}:
+                #if stack is empty
+
+                #1) update ranking
+                ranking = np.array(butler.algorithms.get(key='ranking'))
+                ranking = ranking + arr
+                butler.algorithms.set(key='ranking', value=ranking)
+                    
+                #2) create a new permutation
+                arr = np.random.permutation(range(n))
+                arrlist[quicksort_id] = arr
+                butler.algorithms.set(key='arrlist', value=arrlist)
+        
+                #3) add queries to queue, and stack parameters to stack
+                stackvalue = {'l':0, 'h':len(arr), 'pivot':arr[-1], 'smallerthanpivot':[], 'largerthanpivot':[], 'count':0}
+                stackkey = utils.getNewUID()
+                stackparametersallqs[quicksort_id] = {stackkey: stackvalue}
+                for c4 in range(len(arr)-1):
+                    queryqueuesallqs[quicksort_id].append([arr[c4], arr[-1], [quicksort_id, stackkey]])
+
+        #write everything back
+        butler.algorithms.write(key='stackparametersallqs', value=stackparametersallqs)
+        butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
+        butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
+        
 
         utils.debug_print('new arr:'+str(arrlist))
-        f = open('Quicksort.log', 'a')
-        f.write('New arr \n')
-        for rownbr in range(len(arrlist)-1):
-            f.write(str(arrlist[rownbr])+',')
-        f.write(str(arrlist[rownbr+1])+'\n')
-        f.close()
-        butler.algorithms.set(key='arrlist', value=arrlist)
-        butler.algorithms.set(key='llist', value=llist)
-        butler.algorithms.set(key='hlist', value=hlist)
-        butler.algorithms.set(key='lmaxlist', value=lmaxlist)
-        butler.algorithms.set(key='pivotlist', value=pivotlist)
-        butler.algorithms.set(key='stacklist', value=stacklist)
-        butler.algorithms.set(key='ptrlist', value=ptrlist)
-        butler.algorithms.set(key='rankinglist', value=rankinglist)
         return True
 
     def getModel(self,butler):
