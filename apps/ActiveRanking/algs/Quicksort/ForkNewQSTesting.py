@@ -14,9 +14,9 @@ from termcolor import colored
 class Quicksort:
     #def __init__(self, butler, n=None, params=None):
     def __init__(self, n=None):
-        global nquicksorts, arrlist, queryqueuesallqs, stackparametersallqs, waitingforresponse, ranking
+        global nquicksorts, arrlist, queryqueuesallqs, stackparametersallqs, waitingforresponse, ranking 
 
-        nquicksorts = 10
+        nquicksorts = 3
         #butler.algorithms.set(key='nquicksorts', value=nquicksorts)
         #butler.algorithms.set(key='n', value=n)
 
@@ -28,9 +28,11 @@ class Quicksort:
         queryqueuesallqs = [] #list of queryqueues for all the quicksorts
         for _ in range(nquicksorts):
             queryqueuesallqs.append([])
+
         stackparametersallqs = []
         for _ in range(nquicksorts):
             stackparametersallqs.append({})
+
         for c1 in range(nquicksorts):
             arr = arrlist[c1]
             l = 0
@@ -58,6 +60,7 @@ class Quicksort:
 
         ranking = np.zeros(n)
         #butler.algorithms.set(key='ranking', value=ranking)
+
         return None
 
     #def getQuery(self, butler, participant_uid):
@@ -65,13 +68,34 @@ class Quicksort:
         global nquicksorts, n, arrlist, queryqueuesallqs, stackparametersallqs, waitingforresponse, ranking
 
         #nquicksorts = butler.algorithms.get(key='nquicksorts')
+        #n = butler.algorithms.get(key='n')
+        n = len(arrlist[0])
         quicksort_id = np.random.randint(nquicksorts)
         #arrlist = butler.algorithms.get(key='arrlist')
         arr = arrlist[quicksort_id]
         #queryqueuesallqs = butler.algorithms.get(key='queryqueuesallqs')
-        while queryqueuesallqs[quicksort_id] == []:
-            #sumeet: if all queues empty, what?
-            quicksort_id = np.random.randint(nquicksorts)
+        if queryqueuesallqs == [[]]*nquicksorts:
+            #all quicksort queues empty: fork a new quicksort
+            nquicksorts = nquicksorts + 1
+            arr = np.random.permutation(range(n))
+            arrlist.append(list(arr))
+            stackvalue = {'l':0, 'h':n, 'pivot':arr[-1], 'smallerthanpivot':[], 'largerthanpivot':[], 'count':0}
+            stackkey = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(32))
+            #stackkey = utils.getNewUID()
+            stackparametersallqs.append({stackkey: stackvalue})
+            queryqueue = []
+            for c1 in range(len(arr)-1):
+                queryqueue.append([arr[c1], arr[-1], [nquicksorts-1, stackkey]])
+            queryqueuesallqs.append(queryqueue)
+            quicksort_id = nquicksorts-1
+            waitingforresponse.append({})
+            #butler.algorithms.set(key='nquicksorts', value=nquicksorts)
+            #butler.algorithms.set(key='stackparametersallqs', value= stackparametersallqs)
+            #butler.algorithms.set(key='arrlist', value=arrlist)
+        else:
+            while queryqueuesallqs[quicksort_id] == []:
+                #sumeet: if all queues empty, what?
+                quicksort_id = np.random.randint(nquicksorts)
 
         query = queryqueuesallqs[quicksort_id].pop(0)
         #butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
@@ -195,15 +219,15 @@ def user_response(a,b):
 if __name__ == "__main__":
     #nusers = 100
     #queriesperuser = 50
-    global nquicksorts, arrlist, queryqueuesallqs, stackparametersallqs, waitingforresponse, ranking
+    global nquicksorts, n, arrlist, queryqueuesallqs, stackparametersallqs, waitingforresponse, ranking
     nusers = 10
-    queriesperuser = 50
+    queriesperuser = 100
     queryforuser = []
     for _ in range(nusers):
         queryforuser.append([])
     
     mean_time_between_user_arrival = 1.
-    mean_time_taken_to_click = 0.1
+    mean_time_taken_to_click = 1
 
     QSobj = Quicksort(n=20)
 
@@ -211,6 +235,9 @@ if __name__ == "__main__":
     clicktimes = np.cumsum(np.random.exponential(size = (nusers, queriesperuser), scale=mean_time_taken_to_click), axis=1)
     times = np.hstack((arrival_times, np.tile(arrival_times, (1,queriesperuser)) + clicktimes))
     times = [list(x) for x in times]
+    queriesperuserhistory = []
+    for _ in range(nusers):
+        queriesperuserhistory.append([])
     while True:
         times_under_consideration = []
         for c1 in range(nusers):
@@ -225,10 +252,13 @@ if __name__ == "__main__":
         try:
             times[userindex].pop(0)
         except:
+            #all users finished their quota
             break
+
         if len(times[userindex]) == queriesperuser:
             #this is the first arrival
             queryforuser[userindex] = QSobj.getQuery()
+            queriesperuserhistory[userindex].append((queryforuser[userindex][0], queryforuser[userindex][1]))
         elif len(times[userindex]) == 0:
             #this is his last query
             query = queryforuser[userindex]
@@ -240,13 +270,25 @@ if __name__ == "__main__":
             winner = user_response(query[0], query[1])
             QSobj.processAnswer(query[0], query[1], winner, query[2])
             queryforuser[userindex] = QSobj.getQuery()
+            queriesperuserhistory[userindex].append((queryforuser[userindex][0], queryforuser[userindex][1]))
+
         print colored('User: ','red') + str(userindex)
-        print colored('Queries with users: ','red') + str(queryforuser)
+        print colored('Queries with users: ','red')# + str(queryforuser)
+        for x in queryforuser:
+            print x
         print colored('Query queues for all quicksorts: ','red') #+ str(queryqueuesallqs)
         for x in queryqueuesallqs:
             print x
-        print colored('Waiting for response on: ','red') + str(waitingforresponse)
-        print colored('Stack: ','red') + str(stackparametersallqs)
+        print colored('Waiting for response on: ','red') #+ str(waitingforresponse)
+        for x in waitingforresponse:
+            print x
+        print colored('Stack: ','red') #+ str(stackparametersallqs)
+        for x in stackparametersallqs:
+            print x
         #pdb.set_trace()
 
+    for i in range(nusers):
+        print 'User ' + str(i)
+        print queriesperuserhistory[i]
+        print '\n'
     pdb.set_trace()
