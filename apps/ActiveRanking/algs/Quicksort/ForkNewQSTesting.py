@@ -16,7 +16,7 @@ class Quicksort:
     def __init__(self, n=None):
         global nquicksorts, arrlist, queryqueuesallqs, stackparametersallqs, waitingforresponse, ranking 
 
-        nquicksorts = 3
+        nquicksorts = 8
         #butler.algorithms.set(key='nquicksorts', value=nquicksorts)
         #butler.algorithms.set(key='n', value=n)
 
@@ -97,7 +97,9 @@ class Quicksort:
                 #sumeet: if all queues empty, what?
                 quicksort_id = np.random.randint(nquicksorts)
 
-        query = queryqueuesallqs[quicksort_id].pop(0)
+        #query = queryqueuesallqs[quicksort_id].pop(0)
+        #pop a random query
+        query = queryqueuesallqs[quicksort_id].pop(np.random.randint(len(queryqueuesallqs[quicksort_id])))
         #butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
 
         #waitingforresponse = butler.algorithms.get(key='waitingforresponse')
@@ -220,16 +222,16 @@ if __name__ == "__main__":
     #nusers = 100
     #queriesperuser = 50
     global nquicksorts, n, arrlist, queryqueuesallqs, stackparametersallqs, waitingforresponse, ranking
-    nusers = 10
+    nusers = 100
     queriesperuser = 100
     queryforuser = []
     for _ in range(nusers):
         queryforuser.append([])
     
-    mean_time_between_user_arrival = 1.
-    mean_time_taken_to_click = 1
+    mean_time_between_user_arrival = .3
+    mean_time_taken_to_click = .1
 
-    QSobj = Quicksort(n=20)
+    QSobj = Quicksort(n=100)
 
     arrival_times = np.reshape(np.cumsum(np.random.exponential(size=(nusers,1), scale = mean_time_between_user_arrival)), (nusers,1))
     clicktimes = np.cumsum(np.random.exponential(size = (nusers, queriesperuser), scale=mean_time_taken_to_click), axis=1)
@@ -272,19 +274,19 @@ if __name__ == "__main__":
             queryforuser[userindex] = QSobj.getQuery()
             queriesperuserhistory[userindex].append((queryforuser[userindex][0], queryforuser[userindex][1]))
 
-        print colored('User: ','red') + str(userindex)
-        print colored('Queries with users: ','red')# + str(queryforuser)
-        for x in queryforuser:
-            print x
-        print colored('Query queues for all quicksorts: ','red') #+ str(queryqueuesallqs)
-        for x in queryqueuesallqs:
-            print x
-        print colored('Waiting for response on: ','red') #+ str(waitingforresponse)
-        for x in waitingforresponse:
-            print x
-        print colored('Stack: ','red') #+ str(stackparametersallqs)
-        for x in stackparametersallqs:
-            print x
+        #print colored('User: ','red') + str(userindex)
+        #print colored('Queries with users: ','red')# + str(queryforuser)
+        #for x in queryforuser:
+        #    print x
+        #print colored('Query queues for all quicksorts: ','red') #+ str(queryqueuesallqs)
+        #for x in queryqueuesallqs:
+        #    print x
+        #print colored('Waiting for response on: ','red') #+ str(waitingforresponse)
+        #for x in waitingforresponse:
+        #    print x
+        #print colored('Stack: ','red') #+ str(stackparametersallqs)
+        #for x in stackparametersallqs:
+        #    print x
         #pdb.set_trace()
 
     for i in range(nusers):
