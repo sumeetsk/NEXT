@@ -2,7 +2,8 @@
 author: Lalit Jain, lalitkumarjj@gmail.com
 modified: Chris Fernandez, chris2fernandez@gmail.com
 modified 2015-11-24: Scott Sievert, stsievert@wisc.edu (added docs)
-last updated: 2015-11-24
+modified 2016-10-01: Sumeet Katariya, sumeetsk@gmail.com
+last updated: 2016-10-01
 
 A module for replicating the dueling bandits pure exploration experiments from the NEXT paper.
 

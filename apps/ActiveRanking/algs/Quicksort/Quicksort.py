@@ -101,10 +101,11 @@ class Quicksort:
         utils.debug_print('left_id:'+str(left_id))
         utils.debug_print('right_id:'+str(right_id))
         quicksort_id = quicksort_data[0]
+        utils.debug_print('quicksort_id'+str(quicksort_id))
         arrlist = butler.algorithms.get(key='arrlist')
         queryqueuesallqs = butler.algorithms.get(key='queryqueuesallqs')
-        stackparametersallqs = butler.algorithms.get('stackparametersallqs')
-        waitingforresponse = butler.algorithms.get('waitingforresponse')
+        stackparametersallqs = butler.algorithms.get(key='stackparametersallqs')
+        waitingforresponse = butler.algorithms.get(key='waitingforresponse')
 
         arr = np.array(arrlist[quicksort_id])
 
@@ -183,12 +184,17 @@ class Quicksort:
                     queryqueuesallqs[quicksort_id].append([arr[c4], arr[-1], [quicksort_id, stackkey]])
 
         #write everything back
-        butler.algorithms.write(key='stackparametersallqs', value=stackparametersallqs)
+        butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
         
+        utils.debug_print('stackparametersallqs')
+        for x in stackparametersallqs:
+            utils.debug_print(str(x))
 
-        utils.debug_print('new arr:'+str(arrlist))
+        utils.debug_print('new arr:')
+        for x in arrlist:
+            utils.debug_print(str(x))
         return True
 
     def getModel(self,butler):

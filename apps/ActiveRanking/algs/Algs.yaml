@@ -19,9 +19,9 @@ getQuery:
       description: ID of the participant answering the query
   rets:
     type: list
-    description: List of three IDs--Those of the left target, right target, and quicksort_data
+    description: Left target, right target, and quicksort_data
     values:
-      type: num
+      type: any
     
 processAnswer:
     args:
