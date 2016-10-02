@@ -19,10 +19,14 @@ class Quicksort:
             arrlist.append(list(np.random.permutation(range(n))))
         butler.algorithms.set(key='arrlist', value=arrlist)
 
-        queryqueuesallqs = [[]]*nquicksorts #list of queryqueues for all the quicksorts
+        queryqueuesallqs = [] #list of queryqueues for all the quicksorts
+        for _ in range(nquicksorts):
+            queryqueuesallqs.append([])
+
         stackparametersallqs = []
         for _ in range(nquicksorts):
             stackparametersallqs.append({})
+
         for c1 in range(nquicksorts):
             arr = arrlist[c1]
             l = 0
@@ -49,19 +53,41 @@ class Quicksort:
 
         ranking = np.zeros(n)
         butler.algorithms.set(key='ranking', value=ranking)
+
         return True
 
     def getQuery(self, butler, participant_uid):
         nquicksorts = butler.algorithms.get(key='nquicksorts')
+        n = butler.algorithms.get(key='n')
         quicksort_id = np.random.randint(nquicksorts)
         arrlist = butler.algorithms.get(key='arrlist')
         arr = arrlist[quicksort_id]
         queryqueuesallqs = butler.algorithms.get(key='queryqueuesallqs')
-        while queryqueuesallqs[quicksort_id] == []:
-            #sumeet: if all queues empty, what?
-            quicksort_id = np.random.randint(nquicksorts)
+        if queryqueuesallqs == [[]]*nquicksorts:
+            #all quicksort queues empty: fork a new quicksort
+            nquicksorts = nquicksorts + 1
+            arr = np.random.permutation(range(n))
+            arrlist.append(list(arr))
+            stackvalue = {'l':0, 'h':n, 'pivot':arr[-1], 'smallerthanpivot':[], 'largerthanpivot':[], 'count':0}
+            stackkey = utils.getNewUID()
+            stackparametersallqs.append({stackkey: stackvalue})
+            quicksort_id = nquicksorts-1
+            queryqueue = []
+            for c1 in range(len(arr)-1):
+                queryqueue.append([arr[c1], arr[-1], [quicksort_id, stackkey]])
+            queryqueuesallqs.append(queryqueue)
+            waitingforresponse.append({})
+            butler.algorithms.set(key='nquicksorts', value=nquicksorts)
+            butler.algorithms.set(key='stackparametersallqs', value= stackparametersallqs)
+            butler.algorithms.set(key='arrlist', value=arrlist)
+        else:
+            while queryqueuesallqs[quicksort_id] == []:
+                #current queue empty, switch to a different one
+                quicksort_id = np.random.randint(nquicksorts)
 
-        query = queryqueuesallqs[quicksort_id].pop(0)
+        #query = queryqueuesallqs[quicksort_id].pop(0)
+        #pop a random query
+        query = queryqueuesallqs[quicksort_id].pop(np.random.randint(len(queryqueuesallqs[quicksort_id])))
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
 
         waitingforresponse = butler.algorithms.get(key='waitingforresponse')

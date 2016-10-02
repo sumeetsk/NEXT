@@ -83,18 +83,18 @@ class Quicksort:
             stackkey = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(32))
             #stackkey = utils.getNewUID()
             stackparametersallqs.append({stackkey: stackvalue})
+            quicksort_id = nquicksorts-1
             queryqueue = []
             for c1 in range(len(arr)-1):
-                queryqueue.append([arr[c1], arr[-1], [nquicksorts-1, stackkey]])
+                queryqueue.append([arr[c1], arr[-1], [quicksort_id, stackkey]])
             queryqueuesallqs.append(queryqueue)
-            quicksort_id = nquicksorts-1
             waitingforresponse.append({})
             #butler.algorithms.set(key='nquicksorts', value=nquicksorts)
             #butler.algorithms.set(key='stackparametersallqs', value= stackparametersallqs)
             #butler.algorithms.set(key='arrlist', value=arrlist)
         else:
             while queryqueuesallqs[quicksort_id] == []:
-                #sumeet: if all queues empty, what?
+                #current queue empty, switch to a different one
                 quicksort_id = np.random.randint(nquicksorts)
 
         #query = queryqueuesallqs[quicksort_id].pop(0)
