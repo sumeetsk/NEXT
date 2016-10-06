@@ -8,10 +8,10 @@ import numpy as np
 import next.utils as utils
 
 class Quicksort:
-    app_id = 'ActiveRanking'
-    def initExp(self, butler, n=None, params=None):
-        butler.algorithms.set(key='n', value=n)
-        arr = np.random.permutation(range(n))
+    app_id = 'Quicksort'
+    def initExp(self, butler, arr):
+        n = len(arr)
+        arr = np.random.permutation(arr)
         butler.algorithms.set(key='arr', value=arr)
         butler.algorithms.set(key='l', value=0)
         butler.algorithms.set(key='h', value=n-1)
@@ -28,36 +28,19 @@ class Quicksort:
         arr = butler.algorithms.get('arr')
         ptr = butler.algorithms.get('ptr')
         pivot = butler.algorithms.get('pivot')
-# pick a random Quicksort
-# get a query from this chosen Quicksort
-# Add to the butler dictionary a key with the query_uid and a value equal to the chosen quicksort number
-# return this query
         return [arr[ptr], arr[pivot]]
 
 
-    def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0):
-        utils.debug_print('In Quicksort: processAnswer')
-        utils.debug_print('left_id:'+str(left_id))
-        utils.debug_print('right_id:'+str(right_id))
-        arr = np.array(butler.algorithms.get(key='arr'))
-        utils.debug_print('old arr:'+str(arr))
-        f = open('Quicksort.log','a')
-        f.write('Old arr \n')
-        for rownbr in range(len(arr)-1):
-            f.write(str(arr[rownbr])+',')
-        f.write(str(arr[rownbr+1])+'\n')
-        f.close()
-        l = butler.algorithms.get(key='l')
-        h = butler.algorithms.get(key='h')
-        lmax = butler.algorithms.get(key='lmax')
-        pivot = butler.algorithms.get(key='pivot')
-        stack = butler.algorithms.get(key='stack')
-        ptr = butler.algorithms.get(key='ptr')
-        ranking = np.array(butler.algorithms.get(key='ranking'))
-
-        if not ((arr[ptr], arr[pivot])==(left_id, right_id) or (arr[ptr], arr[pivot])==(right_id, left_id)):
-        #not the query we're looking for
-            return True
+    def processAnswer(self, butler, left_id=0, right_id=0, painted_id=0, winner_id=0):
+        arr = butler.algorithms.get('arr')
+        l = butler.algorithms.get('l')
+        h = butler.algorithms.get('h')
+        lmax = butler.algorithms.get('lmax')
+        pivot = butler.algorithms.get('pivot')
+        stack = butler.algorithms.get('stack')
+        ptr = butler.algorithms.get('ptr')
+        ranking = butler.algorithms.get('ranking')
+        #pdb.set_trace()
 
         if winner_id==arr[pivot]:
             lmax = lmax + 1
@@ -97,5 +80,19 @@ class Quicksort:
         #print ranking
         return True
 
-    def getModel(self,butler):
-        return range(n), range(n)
+def user_response(a,b):
+    if a>b:
+        return a
+    else:
+        return b
+
+if __name__ == "__main__":
+    alg = Quicksort()
+    butler = {}
+    arr = np.random.permutation(range(20))
+    alg.initExp(butler,arr)
+    for _ in range(100):
+        print butler
+        [a,b] = alg.getQuery(butler)
+        winner = user_response(a,b)
+        alg.processAnswer(butler, winner)

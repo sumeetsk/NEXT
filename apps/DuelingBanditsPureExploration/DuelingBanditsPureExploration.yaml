@@ -35,6 +35,9 @@ processAnswer:
         target_winner:
           description: The id of the target that won the given query. This should be an id from the list of ids obtained in the associated getQuery request.
           type: num
+<<<<<<< HEAD
           
 
             
+=======
+>>>>>>> 5d2a596e93845dfdbc2d7c5bffbe1d382a4f0c64

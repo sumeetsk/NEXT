@@ -2,7 +2,8 @@
 author: Lalit Jain, lalitkumarjj@gmail.com
 modified: Chris Fernandez, chris2fernandez@gmail.com
 modified 2015-11-24: Scott Sievert, stsievert@wisc.edu (added docs)
-last updated: 2015-11-24
+modified 2016-09-20: Sumeet Katariya, sumeetsk@gmail.com
+last updated: 2016-09-20
 
 A module for replicating the dueling bandits pure exploration experiments from the NEXT paper.
 
@@ -27,9 +28,11 @@ from launch_experiment import *
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 experiment_list = []
 
-# A list of the currently available StochasticDuelingBanditPureExploration
+# A list of the currently available ActiveRankingPairwiseComparisons
 # algorithms
-supported_alg_ids = ['AR_Random', 'QuickSort']
+#supported_alg_ids = ['BR_LilUCB', 'BR_Random', 'BR_SuccElim',
+#                     'BeatTheMean', 'BR_Thompson']
+supported_alg_ids = ['Quicksort', 'Random']
 
 # Algorithm List. These algorithms are independent (no inter-connectedness
 # between algorithms) and each algorithm gets `proportion` number of queries
@@ -67,7 +70,7 @@ initExp = {}
 initExp['args'] = {}
 
 # probability of error. similar to "significant because p < 0.05"
-#initExp['args']['failure_probability'] = .01
+initExp['args']['failure_probability'] = .01
 
 # one parcipant sees many algorithms? 'one_to_many' means one participant will
 # see many algorithms
@@ -79,7 +82,7 @@ initExp['args']['alg_list'] = alg_list
 initExp['args']['num_tries'] = 50 # How many tries does each user see?
 
 # Which app are we running? (examples of other algorithms are in examples/
-initExp['app_id'] = 'ActiveRanking'
+initExp['app_id'] = 'DuelingBanditsPureExploration'
 
 # which algorithms can be used? BR_LilUCB does some adaptive sampling to only
 # sample the funniest captions, etc.
@@ -101,9 +104,9 @@ initExp['app_id'] = 'ActiveRanking'
 experiment = {}
 experiment['initExp'] = initExp
 experiment['primary_type'] = 'text'
-experiment['primary_target_file'] = curr_dir + "/roundthings.txt"
-experiment['context'] = "Choose the larger among the two"
-experiment['context_type'] = 'text'
+experiment['primary_target_file'] = curr_dir + "/cap436.txt"
+experiment['context'] = curr_dir + "/cap436.jpg"
+experiment['context_type'] = 'image'
 experiment_list.append(experiment)
 
 # Launch the experiment.
