@@ -8,7 +8,9 @@ AR_Random implements random sampling
 
 import numpy as np
 import next.utils as utils
-#logging.basicConfig(filename='AR_Random.log', level=logging.DEBUG)
+#import pickle
+#import logging
+#logging.basicConfig(filename='logging_AR_Random.log', level=logging.DEBUG, filemode='w')
 
 class AR_Random:
     app_id = 'ActiveRanking'
@@ -22,6 +24,10 @@ class AR_Random:
         W = np.zeros((n,n))
 
         butler.algorithms.set(key='W', value=W)
+        f = open('AR_Random.log','w')
+        f.close()
+        #with open('pickle_log.pkl', 'wb') as f:
+        #    pickle.dump({'obj': 'obj'}, f)
 
         return True
 
@@ -43,13 +49,15 @@ class AR_Random:
         W = np.array(butler.algorithms.get(key='W'))
         utils.debug_print('old W:'+str(W))
         f = open('AR_Random.log','a')
-        f.write('Old W \n')
-        for rownbr in range(np.shape(W)[0]):
-            for colnbr in range(np.shape(W)[1]-1):
-                f.write(str(W[rownbr, colnbr])+',')
-            f.write(str(W[rownbr, colnbr+1])+'\n')
-        f.write('\n')
+        f.write(str([left_id,right_id,winner_id])+'\n')
         f.close()
+        #f.write('Old W \n')
+        #for rownbr in range(np.shape(W)[0]):
+        #    for colnbr in range(np.shape(W)[1]-1):
+        #        f.write(str(W[rownbr, colnbr])+',')
+        #    f.write(str(W[rownbr, colnbr+1])+'\n')
+        #f.write('\n')
+        #f.close()
         if left_id == winner_id:
             W[left_id, right_id] = W[left_id, right_id] + 1
         else:
@@ -58,34 +66,8 @@ class AR_Random:
         butler.algorithms.set(key='W', value=W)
         #logging.debug('W = ',W) 
         utils.debug_print('new W:'+str(W))
-        f = open('AR_Random.log','a')
-        f.write('New W \n')
-        for rownbr in range(np.shape(W)[0]):
-            for colnbr in range(np.shape(W)[1]-1):
-                f.write(str(W[rownbr, colnbr])+',')
-            f.write(str(W[rownbr, colnbr+1])+'\n')
-        f.write('\n')
-        f.close()
-
         return True
 
     def getModel(self,butler):
-#        keys = butler.algorithms.get(key='keys')
-#        key_value_dict = butler.algorithms.get(key=keys)
-#        n = butler.algorithms.get(key='n')
-#
-#        sumX = [key_value_dict['Xsum_'+str(i)] for i in range(n)]
-#        T = [key_value_dict['T_'+str(i)] for i in range(n)]
-#
-#        mu = np.zeros(n, dtype='float')
-#        for i in range(n):
-#            if T[i]==0 or mu[i]==float('inf'):
-#                mu[i] = -1
-#            else:
-#                mu[i] = sumX[i] * 1.0 / T[i]
-#
-#        prec = [np.sqrt(1.0/max(1,t)) for t in T]
-#        return mu.tolist(), prec
-        return range(n), range(n)
-
-
+        W = butler.algorithms.get(key='W')
+        return W, range(5)

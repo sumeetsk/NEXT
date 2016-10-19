@@ -65,8 +65,6 @@ class Quicksort:
         queryqueuesallqs = butler.algorithms.get(key='queryqueuesallqs')
         waitingforresponse = butler.algorithms.get(key='waitingforresponse')
         stackparametersallqs = butler.algorithms.get(key='stackparametersallqs')
-        quicksort_id = np.random.randint(nquicksorts)
-        arr = arrlist[quicksort_id]
 
         #for all quicksort_ids, check if there are any queries that have been lying around in waitingforresponse for a long time
         cur_time = datetime.now()
@@ -86,6 +84,9 @@ class Quicksort:
                         queryqueuesallqs[qsid].append(query)
                         utils.debug_print('time exceeded query: ' + str(query))
                         waitingforresponse[qsid][key] = query #setting time to '0' indicates that the query has been added to the queue, avoid repeat additions.
+
+        quicksort_id = np.random.randint(nquicksorts)
+        arr = arrlist[quicksort_id]
 
         if queryqueuesallqs == [[]]*nquicksorts:
             #all quicksort queues empty: fork a new quicksort
@@ -117,6 +118,40 @@ class Quicksort:
         query[2][2] = datetime.now().isoformat()
         waitingforresponse[quicksort_id][str(query[0])+','+str(query[1])] = query
 
+        f = open('Quicksort.log','a')
+        f.write('In getQuery\n')
+        f.write('Quicksort_id: ' + str(quicksort_id)+'\n')
+
+        f.write('arrlist:\n')
+        for x in arrlist:
+            f.write(str(x)+'\n')
+
+        f.write('Query queues:\n')
+        for l1 in queryqueuesallqs:
+            for l2 in l1:
+                f.write(str([l2[0],l2[1]])+', ')
+            f.write('\n')
+
+        f.write('waitingforresponse:\n')
+        cd = 0
+        for d in waitingforresponse:
+            f.write(str(cd)+'\n')
+            cd = cd+1
+            if d=={}:
+                continue
+            for k in d.keys():
+                f.write('('+k+'), ')
+            f.write('\n')
+
+        f.write('Stack:\n')
+        cd = 0
+        for l in stackparametersallqs:
+            f.write(str(cd)+'\n')
+            cd = cd+1
+            for k in l.keys():
+                v = l[k]
+                f.write('[l:'+str(v['l'])+',h:'+str(v['h'])+',count:'+str(v['count'])+',smaller:'+str(v['smallerthanpivot'])+',larger:'+str(v['largerthanpivot'])+',pivot:'+str(v['pivot'])+']\n')
+
         utils.debug_print('quicksort_id: ' + str(quicksort_id))
         utils.debug_print('queryqueuesallqs')
         for x in queryqueuesallqs:
@@ -138,14 +173,15 @@ class Quicksort:
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
 
+        f.close()
         return query
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
 #left_id is actually left item, similarly right_id, winner_id
-        utils.debug_print('In Quicksort: processAnswer')
-        utils.debug_print('left_id:'+str(left_id))
-        utils.debug_print('right_id:'+str(right_id))
         quicksort_id = quicksort_data[0]
+        f = open('Quicksort.log','a')
+        f.write('In processAnswer\n')
+        f.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n\n')
         utils.debug_print('quicksort_id'+str(quicksort_id))
 
         nquicksorts = butler.algorithms.get(key='nquicksorts')
@@ -159,14 +195,15 @@ class Quicksort:
 
         stackkey = quicksort_data[1]
 
-        #utils.debug_print('quicksort_id:'+str(quicksort_id))
         stacks = stackparametersallqs[quicksort_id] #dictionary of stacks for current quicksort_id
 
         try:
             query = waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
         except KeyError:
             #this means that the query response has been received from a different user maybe, and this response should be ignored. This shouldn't happen too often.
+            f.write('Query not found\n')
             utils.debug_print('Query not found')
+            f.close()
             return True
         
         del waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
@@ -224,7 +261,11 @@ class Quicksort:
                 #1) update ranking
                 ranking = np.array(butler.algorithms.get(key='ranking'))
                 ranking = ranking + arr
+                g = open('QSranking.log','a')
+                g.write(str(arr)+'\n')
+                g.close()
                 butler.algorithms.set(key='ranking', value=ranking)
+                f.write('ranking = '+str(ranking)+'\n')
                     
                 #2) create a new permutation
                 arr = np.random.permutation(range(n))
@@ -243,7 +284,8 @@ class Quicksort:
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
         
+        f.close()
         return True
 
     def getModel(self,butler):
-        return range(n), range(n)
+        return range(5), range(5)
