@@ -8,6 +8,7 @@ import numpy as np
 from datetime import datetime
 import dateutil.parser
 import next.utils as utils
+import random
 
 class Quicksort:
     app_id = 'ActiveRanking'
@@ -85,9 +86,6 @@ class Quicksort:
                         utils.debug_print('time exceeded query: ' + str(query))
                         waitingforresponse[qsid][key] = query #setting time to '0' indicates that the query has been added to the queue, avoid repeat additions.
 
-        quicksort_id = np.random.randint(nquicksorts)
-        arr = arrlist[quicksort_id]
-
         if queryqueuesallqs == [[]]*nquicksorts:
             #all quicksort queues empty: fork a new quicksort
             nquicksorts = nquicksorts + 1
@@ -105,14 +103,44 @@ class Quicksort:
             butler.algorithms.set(key='nquicksorts', value=nquicksorts)
             butler.algorithms.set(key='stackparametersallqs', value= stackparametersallqs)
             butler.algorithms.set(key='arrlist', value=arrlist)
-        else:
+
+        #if any item from the previous query is repeated, sample a new quicksort_id
+        last_query = butler.participants.get(key='last_query')
+        if last_query == None:
+            butler.participants.set(key='last_query', value=(-1,-1))
+            last_query = butler.participants.get(key='last_query')
+
+        utils.debug_print('last_query='+str(last_query))
+
+        item_repeated_last_query_count = 0
+        while item_repeated_last_query_count<10:
+            quicksort_id = np.random.randint(nquicksorts)
+
             while queryqueuesallqs[quicksort_id] == []:
                 #current queue empty, switch to a different one
                 quicksort_id = np.random.randint(nquicksorts)
 
+            query_index = np.random.randint(len(queryqueuesallqs[quicksort_id]))
+            potential_query = queryqueuesallqs[quicksort_id][query_index]
+            query_tuple = (potential_query[0], potential_query[1])
 
-        #pop a random query
-        query = queryqueuesallqs[quicksort_id].pop(np.random.randint(len(queryqueuesallqs[quicksort_id])))
+            if not any(x in query_tuple for x in last_query): #no repetition
+                break
+            else:
+                f = open('Repeats.log', 'a')
+                f.write(str(query_tuple)+'\n')
+                f.write('Query item repeated\n')
+                f.close()
+                item_repeated_last_query_count += 1
+
+        #pop the query
+        query = queryqueuesallqs[quicksort_id].pop(query_index)
+        #flip with 50% chance
+        if random.choice([True,False]):
+            query[0],query[1] = query[1],query[0]
+
+        butler.participants.set(key='last_query', value=(query[0], query[1]))
+
 
         #add timestamp to query
         query[2][2] = datetime.now().isoformat()
@@ -153,13 +181,13 @@ class Quicksort:
                 f.write('[l:'+str(v['l'])+',h:'+str(v['h'])+',count:'+str(v['count'])+',smaller:'+str(v['smallerthanpivot'])+',larger:'+str(v['largerthanpivot'])+',pivot:'+str(v['pivot'])+']\n')
 
         utils.debug_print('quicksort_id: ' + str(quicksort_id))
-        utils.debug_print('queryqueuesallqs')
-        for x in queryqueuesallqs:
-            utils.debug_print(str(x))
+        #utils.debug_print('queryqueuesallqs')
+        #for x in queryqueuesallqs:
+        #    utils.debug_print(str(x))
 
-        utils.debug_print('stackparametersallqs')
-        for x in stackparametersallqs:
-            utils.debug_print(str(x))
+        #utils.debug_print('stackparametersallqs')
+        #for x in stackparametersallqs:
+        #    utils.debug_print(str(x))
 
         utils.debug_print('waitingforresponse')
         for x in waitingforresponse:
@@ -174,6 +202,8 @@ class Quicksort:
         butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
 
         f.close()
+        utils.debug_print('Current Query')
+        utils.debug_print(query)
         return query
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
@@ -284,6 +314,10 @@ class Quicksort:
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
         
+        f.close()
+
+        f = open('Queries.log','a')
+        f.write('QS ' + str([left_id,right_id,winner_id])+'\n')
         f.close()
         return True
 

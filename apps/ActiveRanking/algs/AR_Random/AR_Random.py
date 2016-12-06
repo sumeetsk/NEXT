@@ -24,7 +24,8 @@ class AR_Random:
         W = np.zeros((n,n))
 
         butler.algorithms.set(key='W', value=W)
-        f = open('AR_Random.log','w')
+
+        f = open('AR_Random.log','a')
         f.close()
         #with open('pickle_log.pkl', 'wb') as f:
         #    pickle.dump({'obj': 'obj'}, f)
@@ -34,12 +35,31 @@ class AR_Random:
     def getQuery(self, butler, participant_uid):
         utils.debug_print('In AR_Random: getQuery')
         n = butler.algorithms.get(key='n')
+        item_repeated_last_query_count = 0
 
-        index = np.random.randint(n)
-        alt_index = np.random.randint(n)
-        while alt_index == index:
+        #if any item from the previous query is repeated, change items
+        last_query = butler.participants.get(key='last_query')
+        if last_query == None:
+            butler.participants.set(key='last_query', value=(-1,-1))
+            last_query = butler.participants.get(key='last_query')
+
+        #utils.debug_print('last_query='+str(last_query))
+
+        while item_repeated_last_query_count<10:
+            index = np.random.randint(n)
             alt_index = np.random.randint(n)
+            while alt_index == index:
+                alt_index = np.random.randint(n)
+            if not any(x in (index,alt_index) for x in last_query): #no repetition
+                break
+            else:
+                f = open('Repeats.log', 'a')
+                f.write(str((index,alt_index))+'\n')
+                f.write('Query item repeated\n')
+                f.close()
+                item_repeated_last_query_count += 1
 
+        butler.participants.set(key='last_query', value=(index, alt_index))
         return [index, alt_index, 0]
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
@@ -47,8 +67,11 @@ class AR_Random:
         utils.debug_print('left_id:'+str(left_id))
         utils.debug_print('right_id:'+str(right_id))
         W = np.array(butler.algorithms.get(key='W'))
-        utils.debug_print('old W:'+str(W))
+        #utils.debug_print('old W:'+str(W))
         f = open('AR_Random.log','a')
+        f.write(str([left_id,right_id,winner_id])+'\n')
+        f.close()
+        f = open('Queries.log','a')
         f.write(str([left_id,right_id,winner_id])+'\n')
         f.close()
         #f.write('Old W \n')
@@ -65,7 +88,7 @@ class AR_Random:
 
         butler.algorithms.set(key='W', value=W)
         #logging.debug('W = ',W) 
-        utils.debug_print('new W:'+str(W))
+        #utils.debug_print('new W:'+str(W))
         return True
 
     def getModel(self,butler):
