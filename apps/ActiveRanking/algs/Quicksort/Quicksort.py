@@ -83,7 +83,7 @@ class Quicksort:
                         query = waitingforresponse[qsid][key]
                         query[2][2] = '0'
                         queryqueuesallqs[qsid].append(query)
-                        utils.debug_print('time exceeded query: ' + str(query))
+                        #utils.debug_print('time exceeded query: ' + str(query))
                         waitingforresponse[qsid][key] = query #setting time to '0' indicates that the query has been added to the queue, avoid repeat additions.
 
         if queryqueuesallqs == [[]]*nquicksorts:
@@ -110,7 +110,7 @@ class Quicksort:
             butler.participants.set(key='last_query', value=(-1,-1))
             last_query = butler.participants.get(key='last_query')
 
-        utils.debug_print('last_query='+str(last_query))
+        #utils.debug_print('last_query='+str(last_query))
 
         item_repeated_last_query_count = 0
         while item_repeated_last_query_count<10:
@@ -148,7 +148,8 @@ class Quicksort:
 
         f = open('Quicksort.log','a')
         f.write('In getQuery\n')
-        f.write('Quicksort_id: ' + str(quicksort_id)+'\n')
+        #f.write('Quicksort_id: ' + str(quicksort_id)+'\n')
+        f.write('Query being shown: ' + str(query))
 
         f.write('arrlist:\n')
         for x in arrlist:
@@ -180,7 +181,7 @@ class Quicksort:
                 v = l[k]
                 f.write('[l:'+str(v['l'])+',h:'+str(v['h'])+',count:'+str(v['count'])+',smaller:'+str(v['smallerthanpivot'])+',larger:'+str(v['largerthanpivot'])+',pivot:'+str(v['pivot'])+']\n')
 
-        utils.debug_print('quicksort_id: ' + str(quicksort_id))
+        #utils.debug_print('quicksort_id: ' + str(quicksort_id))
         #utils.debug_print('queryqueuesallqs')
         #for x in queryqueuesallqs:
         #    utils.debug_print(str(x))
@@ -189,30 +190,31 @@ class Quicksort:
         #for x in stackparametersallqs:
         #    utils.debug_print(str(x))
 
-        utils.debug_print('waitingforresponse')
-        for x in waitingforresponse:
-            utils.debug_print(str(x))
+        #utils.debug_print('waitingforresponse')
+        #for x in waitingforresponse:
+        #    utils.debug_print(str(x))
 
-        utils.debug_print('new arr:')
-        for x in arrlist:
-            utils.debug_print(str(x))
+        #utils.debug_print('new arr:')
+        #for x in arrlist:
+        #    utils.debug_print(str(x))
 
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
 
         f.close()
-        utils.debug_print('Current Query')
-        utils.debug_print(query)
+        utils.debug_print('In getQuery: Current Query ' + str(query))
         return query
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
 #left_id is actually left item, similarly right_id, winner_id
         quicksort_id = quicksort_data[0]
         f = open('Quicksort.log','a')
+        bugfile = open('Bugs.log', 'a')
+
         f.write('In processAnswer\n')
-        f.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n\n')
-        utils.debug_print('quicksort_id'+str(quicksort_id))
+        f.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n')
+        utils.debug_print('In processAnswer: Winner id ' + str([quicksort_id, left_id, right_id, winner_id]))
 
         nquicksorts = butler.algorithms.get(key='nquicksorts')
         n = butler.algorithms.get(key='n')
@@ -231,9 +233,12 @@ class Quicksort:
             query = waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
         except KeyError:
             #this means that the query response has been received from a different user maybe, and this response should be ignored. This shouldn't happen too often.
-            f.write('Query not found\n')
-            utils.debug_print('Query not found')
+            f.write('Query not found\n\n')
+            bugfile.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n')
+            bugfile.write('Query not found\n\n')
+            #utils.debug_print('Query not found')
             f.close()
+            bugfile.close()
             return True
         
         del waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
@@ -245,12 +250,23 @@ class Quicksort:
                 queryqueuesallqs[quicksort_id].remove(q)
                 break
 
-
         curquerystackvalue = stacks[stackkey]
         if winner_id==left_id:
             loser = right_id
         else:
             loser = left_id
+
+        #second check to make sure this response hasn't been recorded already. Check that the non-pivot id is not in the smallerthanpivot or largerthanpivot list
+        nonpivot_id = (left_id==curquerystackvalue['pivot'])*right_id + (right_id==curquerystackvalue['pivot'])*left_id
+        if nonpivot_id in curquerystackvalue['smallerthanpivot'] or nonpivot_id in curquerystackvalue['largerthanpivot']:
+            bugfile.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n')
+            bugfile.write(str(curquerystackvalue)+'\n')
+            bugfile.write('Response for this query has already been recorded\n\n')
+            f.write('Response for this query has already been recorded\n\n')
+            f.close()
+            bugfile.close()
+            return True
+
 
         if winner_id==curquerystackvalue['pivot']:
             curquerystackvalue['smallerthanpivot'].append(loser)
@@ -315,9 +331,17 @@ class Quicksort:
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
         
         f.close()
+        bugfile.close()
 
         f = open('Queries.log','a')
         f.write('QS ' + str([left_id,right_id,winner_id])+'\n')
+        f.close()
+
+        f = open('QuicksortArraysAnalysis.log', 'a')
+        f.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n')
+        f.write('arrlist:\n')
+        for x in arrlist:
+            f.write(str(x)+'\n\n')
         f.close()
         return True
 
