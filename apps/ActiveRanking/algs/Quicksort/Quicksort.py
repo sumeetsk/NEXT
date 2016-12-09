@@ -9,6 +9,12 @@ from datetime import datetime
 import dateutil.parser
 import next.utils as utils
 import random
+import time
+
+def waitUntilDBClear(butler):
+    while butler.algorithms.get(key='wait'):
+        time.sleep(1e-3)
+    butler.algorithms.set(key='wait', value=True)
 
 class Quicksort:
     app_id = 'ActiveRanking'
@@ -56,10 +62,13 @@ class Quicksort:
 
         ranking = np.zeros(n)
         butler.algorithms.set(key='ranking', value=ranking)
+        butler.algorithms.set(key='wait', value=False)
 
         return True
 
     def getQuery(self, butler, participant_uid):
+        waitUntilDBClear(butler)
+
         nquicksorts = butler.algorithms.get(key='nquicksorts')
         n = butler.algorithms.get(key='n')
         arrlist = butler.algorithms.get(key='arrlist')
@@ -105,35 +114,36 @@ class Quicksort:
             butler.algorithms.set(key='arrlist', value=arrlist)
 
         #if any item from the previous query is repeated, sample a new quicksort_id
-        last_query = butler.participants.get(key='last_query')
-        if last_query == None:
-            butler.participants.set(key='last_query', value=(-1,-1))
-            last_query = butler.participants.get(key='last_query')
+        #last_query = butler.participants.get(key='last_query')
+        #if last_query == None:
+        #    butler.participants.set(key='last_query', value=(-1,-1))
+        #    last_query = butler.participants.get(key='last_query')
 
-        #utils.debug_print('last_query='+str(last_query))
+        ##utils.debug_print('last_query='+str(last_query))
 
-        item_repeated_last_query_count = 0
-        while item_repeated_last_query_count<10:
-            quicksort_id = np.random.randint(nquicksorts)
+        #item_repeated_last_query_count = 0
+        #while item_repeated_last_query_count<10:
+        #    quicksort_id = np.random.randint(nquicksorts)
 
-            while queryqueuesallqs[quicksort_id] == []:
-                #current queue empty, switch to a different one
-                quicksort_id = np.random.randint(nquicksorts)
+        #    while queryqueuesallqs[quicksort_id] == []:
+        #        #current queue empty, switch to a different one
+        #        quicksort_id = np.random.randint(nquicksorts)
 
-            query_index = np.random.randint(len(queryqueuesallqs[quicksort_id]))
-            potential_query = queryqueuesallqs[quicksort_id][query_index]
-            query_tuple = (potential_query[0], potential_query[1])
+        #    query_index = np.random.randint(len(queryqueuesallqs[quicksort_id]))
+        #    potential_query = queryqueuesallqs[quicksort_id][query_index]
+        #    query_tuple = (potential_query[0], potential_query[1])
 
-            if not any(x in query_tuple for x in last_query): #no repetition
-                break
-            else:
-                f = open('Repeats.log', 'a')
-                f.write(str(query_tuple)+'\n')
-                f.write('Query item repeated\n')
-                f.close()
-                item_repeated_last_query_count += 1
+        #    if not any(x in query_tuple for x in last_query): #no repetition
+        #        break
+        #    else:
+        #        f = open('Repeats.log', 'a')
+        #        f.write(str(query_tuple)+'\n')
+        #        f.write('Query item repeated\n')
+        #        f.close()
+        #        item_repeated_last_query_count += 1
 
         #pop the query
+        query_index = np.random.randint(len(queryqueuesallqs[quicksort_id])) #removed last_query business
         query = queryqueuesallqs[quicksort_id].pop(query_index)
         #flip with 50% chance
         if random.choice([True,False]):
@@ -201,6 +211,7 @@ class Quicksort:
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
+        butler.algorithms.set(key='wait', value=False)
 
         f.close()
         utils.debug_print('In getQuery: Current Query ' + str(query))
@@ -208,6 +219,8 @@ class Quicksort:
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
 #left_id is actually left item, similarly right_id, winner_id
+        waitUntilDBClear(butler)
+        
         quicksort_id = quicksort_data[0]
         f = open('Quicksort.log','a')
         bugfile = open('Bugs.log', 'a')
@@ -239,6 +252,7 @@ class Quicksort:
             #utils.debug_print('Query not found')
             f.close()
             bugfile.close()
+            butler.algorithms.set(key='wait', value=False)
             return True
         
         del waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
@@ -265,6 +279,7 @@ class Quicksort:
             f.write('Response for this query has already been recorded\n\n')
             f.close()
             bugfile.close()
+            butler.algorithms.set(key='wait', value=False)
             return True
 
 
@@ -329,6 +344,7 @@ class Quicksort:
         butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
+        butler.algorithms.set(key='wait', value=False)
         
         f.close()
         bugfile.close()

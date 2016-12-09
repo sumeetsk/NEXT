@@ -1,93 +1,149 @@
 import numpy as np
-import utilsMDS
-import time
 import next.utils as utils
-import random
-
-
-def getRandomQuery(n):
-    a = np.random.choice(n)
-    while True:
-        b = np.random.choice(n)
-        if a == b:
-            return [a, b]
+from datetime import datetime
+import dateutil.parser
+import time
 
 
 class ValidationSampling:
-    def initExp(self, butler, n=None, failure_probability=None):
+    """
+    The keys in waitingforresponse are 'id,first_item,second_item'. The id is 1, 2, or 3. The values are (id, first_item, second_item, time_sent). time_sent is set to 0 if it has been more than 10 seconds since the query was sent.
+    """
+    app_id = 'ActiveRanking'
+    def initExp(self, butler, n=None, params=None):
+        """
+        This function is meant to set keys used later by the algorith implemented
+        in this file.
+        """
         butler.algorithms.set(key='n', value=n)
-        butler.algorithms.set(key='failure_probability',
-                              value=failure_probability)
-
-        alg = butler.algorithms.get()
-        params = alg.get(u'params', None)
-        butler.algorithms.set(key='params', value=params)
-
-        if params:
-            if 'query_list' in params:
-                query_list = params['query_list']
-
-            elif 'num_tries' in params:
-                num_tries = params['num_tries']
-                query_list = [getRandomQuery(n) for _ in range(num_tries)]
+        queryqueue = []
+        while len(queryqueue) < 1000:
+            a1 = np.random.randint(n)
+            b1 = np.random.randint(n)
+            while b1==a1:
+                b1 = np.random.randint(n)
+            queryalreadyexists = False
+            for query in queryqueue:
+                if (((query[0],query[1])==(a1,b1)) or ((query[1],query[0])==(b1,a1))):
+                    queryalreadyexists = True
+                    break
+            if queryalreadyexists:
+                continue
             else:
-                raise ValueError('Either specify "query_list" or "num_tries" '
-                                 'in params')
-        else:
-            raise Exception("For ValidationSampling you must specifiy "
-                            "'query_list' or 'num_tries' in params")
+                queryqueue.append([a1,b1,[1,'0']])
 
-        arm_key_value_dict = {}
-        for i in range(n):
-            arm_key_value_dict['Xsum_'+str(i)] = 0.
-            arm_key_value_dict['T_'+str(i)] = 0.
+        queryqueue2 = []
+        for query in queryqueue:
+            queryqueue2.append([query[0], query[1], [2,'0']])
+        queryqueue3 = []
+        for query in queryqueue:
+            queryqueue3.append([query[0], query[1], [3,'0']])
 
-        arm_key_value_dict.update({'total_pulls': 0})
-
-        butler.algorithms.set(key='query_list', value=query_list)
-
-        butler.algorithms.set(key='keys', value=list(arm_key_value_dict.keys()))
-        butler.algorithms.set_many(key_value_dict=arm_key_value_dict)
-
+        butler.algorithms.set(key='VSqueryqueue', value=queryqueue+queryqueue2+queryqueue3)
+        butler.algorithms.set(key='VSwaitingforresponse', value={})
         return True
 
-    def getQuery(self, butler, participant_uid):
-        num_ans = butler.algorithms.get(key='total_pulls')
-        query_list = butler.algorithms.get(key='query_list')
-        i = num_ans % len(query_list)
-
-        query = query_list[i]
-        return query + [query[0]]
-
-    def processAnswer(self, butler, left_id, right_id, painted_id, winner_id):
-        butler.algorithms.increment_many(key_value_dict=
-                                         {'Xsum_'+str(painted_id): 1.0,
-                                          'T_'+str(painted_id): 1.0,
-                                          'total_pulls': 1})
-
-        # The following lines enforce "do not ask". The query list gets shorter
-        # each time this function is called (and an question is answered).
-        #  query_list = butler.participants.get(key='query_list')
-        #  query = butler.algorithms.get(key='query')
-        #  query_list.remove(query)
-        #  butler.participants.set(key='query_list', value=query_list)
-
-        return True
-
-    def getModel(self, butler):
-        keys = butler.algorithms.get(key='keys')
-        key_value_dict = butler.algorithms.get(key=keys)
+    def getQuery(self, butler, participant_id):
         n = butler.algorithms.get(key='n')
+        queryqueue = butler.algorithms.get(key='VSqueryqueue')
+        waitingforresponse = butler.algorithms.get(key='VSwaitingforresponse')
 
-        sumX = [key_value_dict['Xsum_'+str(i)] for i in range(n)]
-        T = [key_value_dict['T_'+str(i)] for i in range(n)]
-
-        mu = np.zeros(n, dtype='float')
-        for i in range(n):
-            if T[i] == 0 or mu[i] == float('inf'):
-                mu[i] = -1
+        #for all queries in waitingforresponse, check if there are any queries that have been lying around in waitingforresponse for a long time
+        cur_time = datetime.now()
+        for key in waitingforresponse:
+            senttimeiniso = waitingforresponse[key][2][1]
+            if senttimeiniso=='0':
+                continue #this query has been added to the queue already
             else:
-                mu[i] = sumX[i] * 1.0 / T[i]
+                senttime = dateutil.parser.parse(senttimeiniso)
+                timepassedsincesent = cur_time-senttime
+                timepassedsincesentinsecs = timepassedsincesent.total_seconds()
+                if timepassedsincesentinsecs > 10:
+                    #setting time to '0' indicates that the query has been added to the queue, avoid repeat additions.
+                    query = waitingforresponse[key]
+                    query[2][1] = '0'
+                    waitingforresponse[key] = query
+                    queryqueue.append(query) 
 
-        prec = [np.sqrt(1.0/max(1, t)) for t in T]
-        return mu.tolist(), prec
+
+        ##if any item from the previous query is repeated, change items
+        #item_repeated_last_query_count = 0
+        #last_query = butler.participants.get(key='last_query')
+        #if last_query == None:
+        #    butler.participants.set(key='last_query', value=(-1,-1))
+        #    last_query = butler.participants.get(key='last_query')
+
+        #while item_repeated_last_query_count<10:
+        #    try:
+        #        query = queryqueue[item_repeated_last_query_count]
+        #    except IndexError:
+        #        queryindex = item_repeated_last_query_count-1
+        #        break
+
+        #    if not any(x in (query[1],query[2]) for x in last_query): #no repetition
+        #        queryindex = item_repeated_last_query_count
+        #        break
+        #    else:
+        #        item_repeated_last_query_count += 1
+
+        #pop the query
+        query = queryqueue.pop(0)
+
+        #flip with 50% chance
+        if random.choice([True,False]):
+            query[0],query[1] = query[1],query[0]
+
+        #butler.participants.set(key='last_query', value=(query[1], query[2]))
+
+        query[2][1] = datetime.now().isoformat()
+        waitingforresponse[str(query[0])+','+str(query[1])+','+str(query[2][0])] = query
+
+        butler.algorithms.set(key='VSqueryqueue', value=queryqueue)
+        butler.algorithms.set(key='VSwaitingforresponse', value=waitingforresponse)
+        f = open('VSampling.log', 'a')
+        f.write('In getQuery\n')
+        f.write('waitingforresponse: '+str(waitingforresponse)+'\n')
+        f.close()
+
+        return query
+
+    def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
+        waitingforresponse = butler.algorithms.get(key='VSwaitingforresponse')
+        queryqueue = butler.algorithms.get(key='VSqueryqueue')
+        f = open('VSampling.log', 'a')
+        f.write('In processAnswer\n')
+        f.write(str([left_id, right_id, winner_id, quicksort_data[0]]) + '\n')
+        try:
+            query = waitingforresponse[str(left_id)+','+str(right_id)+','+str(quicksort_data[0])]
+        except KeyError:
+            #this means that the query response has been received from a different user maybe, and this response should be ignored. This shouldn't happen too often.
+            f.write('In VS processAnswer\n')
+            f.write('Did not find in waitingforresponse' + str(left_id)+','+str(right_id)+','+str(quicksort_data[0]))
+            bugfile = open('Bugs.log', 'a')
+            bugfile.write('In VS processAnswer\n')
+            bugfile.write('Did not find in waitingforresponse' + str(left_id)+','+str(right_id)+','+str(quicksort_data[0]))
+            bugfile.close()
+            f.close()
+
+        del waitingforresponse[str(left_id)+','+str(right_id)+','+str(quicksort_data[0])]
+        
+        #if this query was added to the queue again to be resent because the first response wasn't received soon, delete it from the queue - the response has been received.
+        for q in queryqueue:
+            if ((q[0]==left_id and q[1]==right_id and q[2][0]==quicksort_data[0]) or (q[0]==right_id and q[1]==left_id and q[2][0]==quicksort_data[0])):
+                queryqueue.remove(q)
+                break
+
+        f.close()
+
+        f = open('Queries.log', 'a')
+        f.write('VS ' + str([left_id, right_id, winner_id])+'\n')
+        f.close()
+
+        f = open('VSAnalysis.log', 'a')
+        f.write('VS ' + str([left_id, right_id, winner_id])+'\n')
+        f.close()
+
+        return True
+
+    def getModel(self,butler):
+        return range(5), range(5)
