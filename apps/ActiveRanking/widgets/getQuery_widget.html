@@ -13,17 +13,17 @@ div.container{
 
 div.row > div.col-xs-6 {
 	height:100%;
-	outline: 1px solid black;
+	/*outline: 1px solid black;*/
 }
 
 div.row > div.col-xs-12 {
-	outline: 1px solid black;
+    /*outline: 1px solid black;*/
 	padding:10px;
 	text-align:center;
 }
 
 #center {
-	height:50%;
+	height:10%;
 }
 
 #center > div.col-xs-12 {
@@ -101,7 +101,7 @@ div.row > div.col-xs-12 {
 </div>
 {% endif %}
 
-<div id="query" class="row" style="height: 50%;">
+<div id="query" class="row" style="height: 100%;">
   <!-- Left Target -->
   <div class="col-xs-6" id="left">
 	{% if query.target_indices[0].target.primary_type == "image" or query.target_indices[0].target.primary_type == "img"%}

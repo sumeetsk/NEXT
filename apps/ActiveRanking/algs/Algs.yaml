@@ -19,9 +19,9 @@ getQuery:
       description: ID of the participant answering the query
   rets:
     type: list
-    description: List of three IDs--Those of the left target, right target, and painted target
+    description: Left target, right target, and quicksort_data
     values:
-      type: num
+      type: any
     
 processAnswer:
     args:
@@ -34,6 +34,9 @@ processAnswer:
       winner_id:
         description: ID of the winning target
         type: num
+      quicksort_data:
+        description: Data associated with the quicksort
+        type: any
     rets:
       type: bool
       description: A boolean indicating success

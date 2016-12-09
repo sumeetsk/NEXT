@@ -9,6 +9,9 @@ AR_Random implements random sampling
 import numpy
 import numpy.random
 import next.utils as utils
+#import pickle
+#import logging
+#logging.basicConfig(filename='logging_AR_Random.log', level=logging.DEBUG, filemode='w')
 
 class AR_Random:
     app_id = 'ActiveRanking'
@@ -23,32 +26,61 @@ class AR_Random:
 
         butler.algorithms.set(key='W', value=W)
 
+        f = open('AR_Random.log','a')
+        f.close()
+        #with open('pickle_log.pkl', 'wb') as f:
+        #    pickle.dump({'obj': 'obj'}, f)
+
         return True
 
     def getQuery(self, butler, participant_uid):
         n = butler.algorithms.get(key='n')
+        item_repeated_last_query_count = 0
 
-        index = numpy.random.randint(n)
-        alt_index = numpy.random.randint(n)
-        while alt_index == index:
-            alt_index = numpy.random.randint(n)
+        #if any item from the previous query is repeated, change items
+        last_query = butler.participants.get(key='last_query')
+        if last_query == None:
+            butler.participants.set(key='last_query', value=(-1,-1))
+            last_query = butler.participants.get(key='last_query')
 
-        return [index, alt_index]
+        #utils.debug_print('last_query='+str(last_query))
 
-    def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0):
+        while item_repeated_last_query_count<10:
+            index = np.random.randint(n)
+            alt_index = np.random.randint(n)
+            while alt_index == index:
+                alt_index = np.random.randint(n)
+            if not any(x in (index,alt_index) for x in last_query): #no repetition
+                break
+            else:
+                f = open('Repeats.log', 'a')
+                f.write(str((index,alt_index))+'\n')
+                f.write('Query item repeated\n')
+                f.close()
+                item_repeated_last_query_count += 1
+
+        butler.participants.set(key='last_query', value=(index, alt_index))
+        return [index, alt_index, 0]
+
+    def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
         utils.debug_print('In AR_Random: processAnswer')
         utils.debug_print('left_id:'+str(left_id))
         utils.debug_print('right_id:'+str(right_id))
-        W = numpy.array(butler.algorithms.get(key='W'))
-        utils.debug_print('old W:'+str(W))
+        W = np.array(butler.algorithms.get(key='W'))
+        #utils.debug_print('old W:'+str(W))
         f = open('AR_Random.log','a')
-        f.write('Old W \n')
-        for rownbr in range(numpy.shape(W)[0]):
-            for colnbr in range(numpy.shape(W)[1]-1):
-                f.write(str(W[rownbr, colnbr])+',')
-            f.write(str(W[rownbr, colnbr+1])+'\n')
-        f.write('\n')
+        f.write(str([left_id,right_id,winner_id])+'\n')
         f.close()
+        f = open('Queries.log','a')
+        f.write(str([left_id,right_id,winner_id])+'\n')
+        f.close()
+        #f.write('Old W \n')
+        #for rownbr in range(np.shape(W)[0]):
+        #    for colnbr in range(np.shape(W)[1]-1):
+        #        f.write(str(W[rownbr, colnbr])+',')
+        #    f.write(str(W[rownbr, colnbr+1])+'\n')
+        #f.write('\n')
+        #f.close()
         if left_id == winner_id:
             W[left_id, right_id] = W[left_id, right_id] + 1
         else:
@@ -56,35 +88,9 @@ class AR_Random:
 
         butler.algorithms.set(key='W', value=W)
         #logging.debug('W = ',W) 
-        utils.debug_print('new W:'+str(W))
-        f = open('AR_Random.log','a')
-        f.write('New W \n')
-        for rownbr in range(numpy.shape(W)[0]):
-            for colnbr in range(numpy.shape(W)[1]-1):
-                f.write(str(W[rownbr, colnbr])+',')
-            f.write(str(W[rownbr, colnbr+1])+'\n')
-        f.write('\n')
-        f.close()
-
+        #utils.debug_print('new W:'+str(W))
         return True
 
     def getModel(self,butler):
-#        keys = butler.algorithms.get(key='keys')
-#        key_value_dict = butler.algorithms.get(key=keys)
-#        n = butler.algorithms.get(key='n')
-#
-#        sumX = [key_value_dict['Xsum_'+str(i)] for i in range(n)]
-#        T = [key_value_dict['T_'+str(i)] for i in range(n)]
-#
-#        mu = numpy.zeros(n, dtype='float')
-#        for i in range(n):
-#            if T[i]==0 or mu[i]==float('inf'):
-#                mu[i] = -1
-#            else:
-#                mu[i] = sumX[i] * 1.0 / T[i]
-#
-#        prec = [numpy.sqrt(1.0/max(1,t)) for t in T]
-#        return mu.tolist(), prec
-        return range(n), range(n)
-
-
+        W = butler.algorithms.get(key='W')
+        return W, range(5)

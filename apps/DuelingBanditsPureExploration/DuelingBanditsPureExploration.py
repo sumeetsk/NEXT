@@ -57,6 +57,11 @@ class DuelingBanditsPureExploration(object):
         alg_response = alg({'participant_uid':args['participant_uid']})
         targets = [self.TargetManager.get_target_item(butler.exp_uid, alg_response[i])
                    for i in [0, 1, 2]]
+        f = open('sumeet.log','a')
+        f.write('In Random getQuery\n')
+        f.write(str(alg_response)+'\n')
+        f.write(str(targets)+'\n')
+        f.close()
 
         targets_list = [{'target':targets[0],'label':'left'}, 
                         {'target':targets[1],'label':'right'}]

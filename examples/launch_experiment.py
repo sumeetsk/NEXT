@@ -26,6 +26,7 @@ import getopt
 import zipfile
 import requests
 import datetime
+import numpy as np
 import time
 from StringIO import StringIO
 from joblib import Parallel, delayed
@@ -121,10 +122,13 @@ def generate_target_blob(AWS_BUCKET_NAME,
                                    for k, v in target_features.items()}
             if type(parallel_upload) == bool and not parallel_upload:
                 # happens only for parallel_upload == False
+                target_files = list(target_file_dict.iteritems())
+                i = np.array([int(x) for x in target_file_dict.keys()])
+                i = np.argsort(i)
+                target_files = [target_files[ii] for ii in i]
                 targets = [upload_target_to_S3(target_name_dict, key, bucket,
                                            prefix, primary_file, primary_type)
-                       for i, (key, primary_file) in
-                                    enumerate(target_file_dict.iteritems())]
+                       for i, (key, primary_file) in enumerate(target_files)]
             else:
                 # happens only for parallel_upload == True
 

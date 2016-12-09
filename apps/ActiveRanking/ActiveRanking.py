@@ -69,7 +69,7 @@ class ActiveRanking(object):
         #    targets_list[0]['flag'] = 0
         #    targets_list[1]['flag'] = 1
 
-        return_dict = {'target_indices':targets_list, 'quicksort_id':alg_response[3]}
+        return_dict = {'target_indices':targets_list, 'quicksort_data': alg_response[2]}
 
         experiment_dict = butler.experiment.get()
 
@@ -85,16 +85,17 @@ class ActiveRanking(object):
     def processAnswer(self, butler, alg, args):
         query = butler.queries.get(uid=args['query_uid'])
         targets = query['target_indices']
-        left_id = target[0]['target']
-        right_id = target[1]['target']
-        quicksort_id = query['quicksort_id']        
+        left_id = targets[0]['target']['target_id']
+        right_id = targets[1]['target']['target_id']
+        quicksort_data = query['quicksort_data']
         winner_id = args['target_winner']
         butler.experiment.increment(key='num_reported_answers_for_' + query['alg_label'])
 
         alg({'left_id':left_id, 
              'right_id':right_id, 
-             'winner_id':winner_id})
-        return {'winner_id':winner_id, 'quicksort_id':quicksort_id}
+             'winner_id':winner_id,
+             'quicksort_data':quicksort_data})
+        return {'winner_id':winner_id, 'quicksort_data':quicksort_data}
                 
 
     def getModel(self, butler, alg, args):
@@ -115,5 +116,16 @@ class ActiveRanking(object):
                            'precision':precisions[index]} )
         num_reported_answers = butler.experiment.get('num_reported_answers')
         return {'targets': targets, 'num_reported_answers':num_reported_answers} 
+
+    def chooseAlg(self, butler, args, alg_list, prop):
+        prop = [prop_item['proportion'] for prop_item in algorithm_management_settings['params']]
+        chosen_alg = numpy.random.choice(alg_list, p=prop)
+        if chosen_alg == 'ValidationSampling':
+            prop = [p for p, a in zip(prop, alg_list) if a['alg_label'] != 'ValidationSampling']
+            prop = [p/sum(prop) for p in prop]
+            alg_list = [ai for ai in alg_list if ai['alg_label'] != 'ValidationSampling']
+            if butler.experiments.get(key='nvalidationqueries') > 3000:
+                chosen_alg = numpy.random.choice(alg_list, prop)
+        return chosen_alg
 
 
