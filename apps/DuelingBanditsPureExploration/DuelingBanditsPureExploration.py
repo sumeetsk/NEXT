@@ -73,8 +73,20 @@ class DuelingBanditsPureExploration(object):
 
         experiment_dict = butler.experiment.get()
 
-        butler.memory.set('ketesting', 'value')
-
+        #DELETE
+        # butler.memory.set('ketesting', 'value')
+        # utils.debug_print('set done')
+        # l = butler.memory.lock('asd')
+        # utils.debug_print('lock object got')
+        # l.acquire()
+        # utils.debug_print('lock acquired')
+        # for i in range(10000):
+        #     utils.debug_print('a')
+        # utils.debug_print('lock releasing')
+        # l.release()
+        # utils.debug_print('lock released')
+        #END DELETE
+        
         #if 'labels' in experiment_dict['args']['rating_scale']:
             #labels = experiment_dict['args']['rating_scale']['labels']
             #return_dict.update({'labels':labels})
@@ -85,9 +97,11 @@ class DuelingBanditsPureExploration(object):
         return return_dict
 
     def processAnswer(self, butler, alg, args):
-        a = butler.memory.get('ketesting')
-        assert a == 'value'
-        utils.debug_print("butler.memory testing: ", a)
+        #DELETE
+        # a = butler.memory.get('ketesting')
+        # assert a == 'value'
+        # utils.debug_print("butler.memory testing: ", a)
+        #END DELETE
         query = butler.queries.get(uid=args['query_uid'])
         targets = query['target_indices']
         for target in targets:
