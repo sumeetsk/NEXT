@@ -149,12 +149,14 @@ class Quicksort:
         if random.choice([True,False]):
             query[0],query[1] = query[1],query[0]
 
-        butler.participants.set(key='last_query', value=(query[0], query[1]))
+        #butler.participants.set(key='last_query', value=(query[0], query[1]))
 
 
         #add timestamp to query
         query[2][2] = datetime.now().isoformat()
-        waitingforresponse[quicksort_id][str(query[0])+','+str(query[1])] = query
+        smallerindexitem = min(query[0], query[1])
+        largerindexitem = max(query[0], query[1])
+        waitingforresponse[quicksort_id][str(smallerindexitem)+','+str(largerindexitem)] = query
 
         f = open('Quicksort.log','a')
         f.write('In getQuery\n')
@@ -242,8 +244,10 @@ class Quicksort:
 
         stacks = stackparametersallqs[quicksort_id] #dictionary of stacks for current quicksort_id
 
+        smallerindexitem = min(left_id, right_id)
+        largerindexitem = max(left_id, right_id)
         try:
-            query = waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
+            query = waitingforresponse[quicksort_id][str(smallerindexitem)+','+str(largerindexitem)]
         except KeyError:
             #this means that the query response has been received from a different user maybe, and this response should be ignored. This shouldn't happen too often.
             f.write('Query not found\n\n')
@@ -255,7 +259,7 @@ class Quicksort:
             butler.algorithms.set(key='wait', value=False)
             return True
         
-        del waitingforresponse[quicksort_id][str(left_id)+','+str(right_id)]
+        del waitingforresponse[quicksort_id][str(smallerindexitem)+','+str(largerindexitem)]
         #if waitingforresponse is empty, it means there might be queries that have not been sent out to users so far.
 
         #if this query was added to the queue again to be resent because the first response wasn't received soon, delete it from the queue - the response has been received.
