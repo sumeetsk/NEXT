@@ -11,10 +11,10 @@ import next.utils as utils
 import random
 import time
 
-def waitUntilDBClear(butler):
-    while butler.algorithms.get(key='wait'):
-        time.sleep(1e-3)
-    butler.algorithms.set(key='wait', value=True)
+#def waitUntilDBClear(butler):
+#    while butler.algorithms.get(key='wait'):
+#        time.sleep(1e-3)
+#    butler.algorithms.set(key='wait', value=True)
 
 class Quicksort:
     app_id = 'ActiveRanking'
@@ -62,12 +62,12 @@ class Quicksort:
 
         ranking = np.zeros(n)
         butler.algorithms.set(key='ranking', value=ranking)
-        butler.algorithms.set(key='wait', value=False)
+        #butler.algorithms.set(key='wait', value=False)
 
         return True
 
     def getQuery(self, butler, participant_uid):
-        waitUntilDBClear(butler)
+        #waitUntilDBClear(butler)
 
         nquicksorts = butler.algorithms.get(key='nquicksorts')
         n = butler.algorithms.get(key='n')
@@ -213,7 +213,7 @@ class Quicksort:
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
-        butler.algorithms.set(key='wait', value=False)
+        #butler.algorithms.set(key='wait', value=False)
 
         f.close()
         utils.debug_print('In getQuery: Current Query ' + str(query))
@@ -221,7 +221,7 @@ class Quicksort:
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
 #left_id is actually left item, similarly right_id, winner_id
-        waitUntilDBClear(butler)
+        #waitUntilDBClear(butler)
         
         quicksort_id = quicksort_data[0]
         f = open('Quicksort.log','a')
@@ -256,7 +256,7 @@ class Quicksort:
             #utils.debug_print('Query not found')
             f.close()
             bugfile.close()
-            butler.algorithms.set(key='wait', value=False)
+            #butler.algorithms.set(key='wait', value=False)
             return True
         
         del waitingforresponse[quicksort_id][str(smallerindexitem)+','+str(largerindexitem)]
@@ -283,7 +283,7 @@ class Quicksort:
             f.write('Response for this query has already been recorded\n\n')
             f.close()
             bugfile.close()
-            butler.algorithms.set(key='wait', value=False)
+            #butler.algorithms.set(key='wait', value=False)
             return True
 
 
@@ -348,7 +348,7 @@ class Quicksort:
         butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
-        butler.algorithms.set(key='wait', value=False)
+        #butler.algorithms.set(key='wait', value=False)
         
         f.close()
         bugfile.close()
