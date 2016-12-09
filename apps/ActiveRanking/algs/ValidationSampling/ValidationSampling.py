@@ -95,8 +95,11 @@ class ValidationSampling:
 
         #butler.participants.set(key='last_query', value=(query[1], query[2]))
 
+        #add timestamp to query
         query[2][1] = datetime.now().isoformat()
-        waitingforresponse[str(query[0])+','+str(query[1])+','+str(query[2][0])] = query
+        smallerindexitem = min(query[0], query[1])
+        largerindexitem = max(query[0], query[1])
+        waitingforresponse[str(smallerindexitem)+','+str(largerindexitem)+','+str(query[2][0])] = query
 
         butler.algorithms.set(key='VSqueryqueue', value=queryqueue)
         butler.algorithms.set(key='VSwaitingforresponse', value=waitingforresponse)
@@ -113,8 +116,11 @@ class ValidationSampling:
         f = open('VSampling.log', 'a')
         f.write('In processAnswer\n')
         f.write(str([left_id, right_id, winner_id, quicksort_data[0]]) + '\n')
+
+        smallerindexitem = min(left_id, right_id)
+        largerindexitem = max(left_id, right_id)
         try:
-            query = waitingforresponse[str(left_id)+','+str(right_id)+','+str(quicksort_data[0])]
+            query = waitingforresponse[str(smallerindexitem)+','+str(largerindexitem)+','+str(quicksort_data[0])]
         except KeyError:
             #this means that the query response has been received from a different user maybe, and this response should be ignored. This shouldn't happen too often.
             f.write('In VS processAnswer\n')
@@ -125,7 +131,7 @@ class ValidationSampling:
             bugfile.close()
             f.close()
 
-        del waitingforresponse[str(left_id)+','+str(right_id)+','+str(quicksort_data[0])]
+        del waitingforresponse[str(smallerindexitem)+','+str(largerindexitem)+','+str(quicksort_data[0])]
         
         #if this query was added to the queue again to be resent because the first response wasn't received soon, delete it from the queue - the response has been received.
         for q in queryqueue:
