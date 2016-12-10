@@ -68,6 +68,8 @@ class Quicksort:
 
     def getQuery(self, butler, participant_uid):
         #waitUntilDBClear(butler)
+        lock = butler.memory.lock('lock')
+        lock.acquire()
 
         nquicksorts = butler.algorithms.get(key='nquicksorts')
         n = butler.algorithms.get(key='n')
@@ -222,11 +224,14 @@ class Quicksort:
 
         f.close()
         utils.debug_print('In getQuery: Current Query ' + str(query))
+        lock.release()
         return query
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
 #left_id is actually left item, similarly right_id, winner_id
         #waitUntilDBClear(butler)
+        lock = butler.memory.lock('lock')
+        lock.acquire()
         
         quicksort_id = quicksort_data[0]
         f = open('Quicksort.log','a')
@@ -261,6 +266,7 @@ class Quicksort:
             #utils.debug_print('Query not found')
             f.close()
             bugfile.close()
+            lock.release()
             #butler.algorithms.set(key='wait', value=False)
             return True
         
@@ -288,6 +294,7 @@ class Quicksort:
             f.write('Response for this query has already been recorded\n\n')
             f.close()
             bugfile.close()
+            lock.release()
             #butler.algorithms.set(key='wait', value=False)
             return True
 
@@ -368,6 +375,7 @@ class Quicksort:
         for x in arrlist:
             f.write(str(x)+'\n\n')
         f.close()
+        lock.release()
         return True
 
     def getModel(self,butler):
