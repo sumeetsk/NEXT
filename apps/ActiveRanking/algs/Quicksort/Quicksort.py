@@ -143,6 +143,11 @@ class Quicksort:
         #        item_repeated_last_query_count += 1
 
         #pop the query
+        quicksort_id = np.random.randint(nquicksorts)
+
+        while queryqueuesallqs[quicksort_id] == []:
+            #current queue empty, switch to a different one
+            quicksort_id = np.random.randint(nquicksorts)
         query_index = np.random.randint(len(queryqueuesallqs[quicksort_id])) #removed last_query business
         query = queryqueuesallqs[quicksort_id].pop(query_index)
         #flip with 50% chance

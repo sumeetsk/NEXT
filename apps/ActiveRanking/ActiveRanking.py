@@ -118,7 +118,6 @@ class ActiveRanking(object):
         return {'targets': targets, 'num_reported_answers':num_reported_answers} 
 
     def chooseAlg(self, butler, args, alg_list, prop):
-        prop = [prop_item['proportion'] for prop_item in algorithm_management_settings['params']]
         chosen_alg = numpy.random.choice(alg_list, p=prop)
         if chosen_alg == 'ValidationSampling':
             prop = [p for p, a in zip(prop, alg_list) if a['alg_label'] != 'ValidationSampling']

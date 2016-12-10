@@ -3,6 +3,7 @@ import next.utils as utils
 from datetime import datetime
 import dateutil.parser
 import time
+import random
 
 
 class ValidationSampling:
@@ -43,7 +44,7 @@ class ValidationSampling:
         butler.algorithms.set(key='VSwaitingforresponse', value={})
         return True
 
-    def getQuery(self, butler, participant_id):
+    def getQuery(self, butler, participant_uid):
         n = butler.algorithms.get(key='n')
         queryqueue = butler.algorithms.get(key='VSqueryqueue')
         waitingforresponse = butler.algorithms.get(key='VSwaitingforresponse')

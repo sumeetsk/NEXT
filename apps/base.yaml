@@ -52,7 +52,7 @@ initExp:
             mode:
               description: Currently, fixed_proportions is the only implement mode and a probability of an algorithm being drawn has to be selected. We hope to include more active ways of choosing the algorithm in future versions of NEXT.
               type: str
-              values: [fixed_proportions]
+              values: [fixed_proportions, custom]
             params:
               description: (note; documentation for mode=fixed_proportions). Parameters to help select an algorithm.
               type: list

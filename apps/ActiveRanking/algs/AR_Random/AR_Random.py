@@ -6,7 +6,7 @@ last updated: 09/24/2016
 AR_Random implements random sampling 
 """
 
-import numpy
+import numpy as np
 import numpy.random
 import next.utils as utils
 #import pickle
