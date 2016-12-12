@@ -106,7 +106,7 @@ class ValidationSampling:
         butler.algorithms.set(key='VSwaitingforresponse', value=waitingforresponse)
         f = open('VSampling.log', 'a')
         f.write('In getQuery\n')
-        f.write('waitingforresponse: '+str(waitingforresponse)+'\n')
+        f.write('waitingforresponse: '+str(waitingforresponse)+'\n\n')
         f.close()
 
         return query
@@ -140,14 +140,15 @@ class ValidationSampling:
                 queryqueue.remove(q)
                 break
 
+        f.write('\n')
         f.close()
 
         f = open('Queries.log', 'a')
-        f.write('VS ' + str([left_id, right_id, winner_id])+'\n')
+        f.write('VS ' + str([quicksort_data[0], left_id, right_id, winner_id])+'\n')
         f.close()
 
         f = open('VSAnalysis.log', 'a')
-        f.write('VS ' + str([left_id, right_id, winner_id])+'\n')
+        f.write(str([quicksort_data[0], left_id, right_id, winner_id])+'\n')
         f.close()
 
         return True

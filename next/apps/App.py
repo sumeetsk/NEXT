@@ -85,13 +85,17 @@ class App(object):
         utils.debug_print(str(args))
         def init_algs_wrapper(alg_args={}):
             for algorithm in alg_list:
+                #utils.debug_print('initing {}'.format(algorithm))
                 # Set doc in algorithms bucket. These objects are used by the algorithms to store data.
                 algorithm['exp_uid'] = exp_uid
                 self.butler.algorithms.set(uid=algorithm['alg_label'], value=algorithm)
                 self.init_alg(exp_uid, algorithm, alg_args)
                 # params = algorithm.get('params',None)
+        #utils.debug_print('after initing algs')
                 
-        return self.myApp.initExp(self.butler, init_algs_wrapper, args)
+        r = self.myApp.initExp(self.butler, init_algs_wrapper, args)
+        #utils.debug_print('after initing app')
+        return r
     
     def initExp(self, exp_uid, args_json):
         try:
@@ -103,6 +107,7 @@ class App(object):
             self.butler.admin.set(uid=exp_uid,value={'exp_uid': exp_uid, 'app_id':self.app_id, 'start_date':str(utils.datetimeNow())})            
             utils.debug_print("ASD "+str(args_dict))
             args_dict['args'] = self.init_app(exp_uid, args_dict['args']['alg_list'], args_dict['args'])
+            #utils.debug_print('after init app')
             args_dict['git_hash'] = git_hash
             self.butler.experiment.set(value=args_dict)
             return '{}', True, ''

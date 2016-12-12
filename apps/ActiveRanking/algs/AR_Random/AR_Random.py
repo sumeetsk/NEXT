@@ -72,7 +72,7 @@ class AR_Random:
         f.write(str([left_id,right_id,winner_id])+'\n')
         f.close()
         f = open('Queries.log','a')
-        f.write(str([left_id,right_id,winner_id])+'\n')
+        f.write('AR '+str([left_id,right_id,winner_id])+'\n')
         f.close()
         #f.write('Old W \n')
         #for rownbr in range(np.shape(W)[0]):

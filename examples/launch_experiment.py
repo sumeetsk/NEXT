@@ -137,6 +137,10 @@ def generate_target_blob(AWS_BUCKET_NAME,
                 elif type(parallel_upload) in {int, float}:
                     n_jobs = int(parallel_upload)
 
+                target_files = list(target_file_dict.iteritems())
+                i = np.array([int(x) for x in target_file_dict.keys()])
+                i = np.argsort(i)
+                target_files = [target_files[ii] for ii in i]
                 targets = Parallel(n_jobs=n_jobs)(delayed(upload_target_to_S3)
                             (target_name_dict, key, bucket, prefix,
                                 primary_file, primary_type,
@@ -144,7 +148,7 @@ def generate_target_blob(AWS_BUCKET_NAME,
                                 else {'feature_vector':
                                     target_features[key]})
                            for i, (key, primary_file) in
-                                        enumerate(target_file_dict.iteritems()))
+                                        enumerate(target_files))
     else:
         if experiment.get('image-urls', False) or experiment.get('image-url', False):
             # This is the section where 

@@ -11,10 +11,11 @@ import time
 from multiprocessing import Pool
 import os
 import sys
+from joblib import Parallel, delayed
 try:
     import next.apps.test_utils as test_utils
 except:
-    sys.path.append('../../..')
+    sys.path.append('../../../next/apps/')
     import test_utils
 
 
@@ -26,14 +27,15 @@ def test_validation_params():
         test_api(params=param)
 
 
-def test_api(assert_200=True, num_arms=5, num_clients=8, delta=0.05,
-             total_pulls_per_client=5, num_experiments=1,
+def test_api(assert_200=True, num_arms=100, num_clients=100, delta=0.05,
+             total_pulls_per_client=300, num_experiments=1,
              params={'num_tries': 5}):
 
-    app_id = 'DuelingBanditsPureExploration'
+    app_id = 'ActiveRanking'
     true_means = numpy.array(range(num_arms)[::-1])/float(num_arms)
+    true_means = np.arange(num_arms)
     pool = Pool(processes=num_clients)
-    supported_alg_ids = ['BR_LilUCB', 'BR_Random', 'ValidationSampling']
+    supported_alg_ids = ['AR_Random', 'Quicksort', 'ValidationSampling']
 
     alg_list = []
     for i, alg_id in enumerate(supported_alg_ids):
@@ -44,11 +46,15 @@ def test_api(assert_200=True, num_arms=5, num_clients=8, delta=0.05,
         alg_item['alg_label'] = alg_id+'_'+str(i)
         alg_list.append(alg_item)
 
-    params = []
-    for algorithm in alg_list:
-        params.append({'alg_label': algorithm['alg_label'], 'proportion':1./len(alg_list)})
+    #params = []
+    #for algorithm in alg_list:
+    #    params.append({'alg_label': algorithm['alg_label'], 'proportion':1./len(alg_list)})
+    params = [{'alg_label': 'AR_Random', 'proportion': 10./28},
+        {'alg_label': 'Quicksort', 'proportion': 15./28},
+        {'alg_label': 'ValidationSampling', 'proportion': 3./28}]
     algorithm_management_settings = {}
-    algorithm_management_settings['mode'] = 'fixed_proportions'
+    #algorithm_management_settings['mode'] = 'fixed_proportions'
+    algorithm_management_settings['mode'] = 'custom'
     algorithm_management_settings['params'] = params
 
     print algorithm_management_settings
@@ -59,10 +65,10 @@ def test_api(assert_200=True, num_arms=5, num_clients=8, delta=0.05,
     initExp_args_dict = {}
     initExp_args_dict['args'] = {'alg_list': alg_list,
                                  'algorithm_management_settings': algorithm_management_settings,
-                                 'context': 'Context for Dueling Bandits',
+                                 'context': 'Which place looks safer?',
                                  'context_type': 'text',
                                  'debrief': 'Test debried.',
-                                 'failure_probability': 0.05,
+                                 #'failure_probability': 0.05,
                                  'instructions': 'Test instructions.',
                                  'participant_to_algorithm_management': 'one_to_many',
                                  'targets': {'n': num_arms}}
@@ -73,7 +79,9 @@ def test_api(assert_200=True, num_arms=5, num_clients=8, delta=0.05,
 
     exp_info = []
     for ell in range(num_experiments):
+        print 'launching experiment'
         exp_info += [test_utils.initExp(initExp_args_dict)[1]]
+        print 'done launching'
 
     # Generate participants
     participants = []
@@ -87,12 +95,16 @@ def test_api(assert_200=True, num_arms=5, num_clients=8, delta=0.05,
         pool_args.append((exp_uid, participant_uid, total_pulls_per_client,
                           true_means,assert_200))
 
+    print 'starting to simulate all the clients...'
     results = pool.map(simulate_one_client, pool_args)
+    # results = Parallel(n_jobs=num_clients, backend='threading')(
+    #             (delayed(simulate_one_client, check_pickle=False)(a) for a in pool_args))
+    print 'done simulating clients'
 
     for result in results:
         result
 
-    test_utils.getModel(exp_uid, app_id, supported_alg_ids, alg_list)
+    #test_utils.getModel(exp_uid, app_id, supported_alg_ids, alg_list)
 
 def simulate_one_client(input_args):
     exp_uid,participant_uid,total_pulls,true_means,assert_200 = input_args
@@ -100,7 +112,7 @@ def simulate_one_client(input_args):
     getQuery_times = []
     processAnswer_times = []
     for t in range(total_pulls):
-        print "        Participant {} had {} total pulls: ".format(participant_uid, t)
+        print "        Participant {} is pulling {}/{} arms: ".format(participant_uid, t, total_pulls)
 
         # test POST getQuery #
         # return a widget 1/5 of the time (normally, use HTML)
@@ -119,12 +131,18 @@ def simulate_one_client(input_args):
         left = targets[0]['target']
         right = targets[1]['target']
 
+        if np.random.random()<1./1000:
+            f = open('Drops.log', 'a')
+            f.write(str(query_dict)+'\n\n')
+            f.close()
+            break
+
         # sleep for a bit to simulate response time
-        ts = test_utils.response_delay()
+        ts = test_utils.response_delay(mean=0, std=0)
 
         #  print left
-        reward_left = true_means[left['target_id']] + numpy.random.randn()*0.5
-        reward_right = true_means[right['target_id']] + numpy.random.randn()*0.5
+        reward_left = true_means[left['target_id']]# + numpy.random.randn()*0.5
+        reward_right = true_means[right['target_id']]# + numpy.random.randn()*0.5
         if reward_left > reward_right:
             target_winner = left
         else:
@@ -140,12 +158,14 @@ def simulate_one_client(input_args):
         processAnswer_json_response, dt = test_utils.processAnswer(processAnswer_args_dict)
         processAnswer_times += [dt]
 
+
     r = test_utils.format_times(getQuery_times, processAnswer_times, total_pulls,
                    participant_uid)
+    print(r)
     return r
 
 
 if __name__ == '__main__':
     test_api()
-    # test_api(assert_200=True, num_arms=5, num_clients=10, delta=0.05,
+    #test_api(assert_200=True, num_arms=5, num_clients=10, delta=0.05,
                 #    total_pulls_per_client=10, num_experiments=1)

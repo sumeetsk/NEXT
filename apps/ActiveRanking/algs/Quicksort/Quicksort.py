@@ -168,7 +168,7 @@ class Quicksort:
         f = open('Quicksort.log','a')
         f.write('In getQuery\n')
         #f.write('Quicksort_id: ' + str(quicksort_id)+'\n')
-        f.write('Query being shown: ' + str(query))
+        f.write('Query being shown: ' + str(query)+'\n')
 
         f.write('arrlist:\n')
         for x in arrlist:
@@ -222,6 +222,7 @@ class Quicksort:
         butler.algorithms.set(key='stackparametersallqs', value=stackparametersallqs)
         #butler.algorithms.set(key='wait', value=False)
 
+        f.write('\n')
         f.close()
         utils.debug_print('In getQuery: Current Query ' + str(query))
         lock.release()
@@ -264,6 +265,7 @@ class Quicksort:
             bugfile.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n')
             bugfile.write('Query not found\n\n')
             #utils.debug_print('Query not found')
+            f.write('\n')
             f.close()
             bugfile.close()
             lock.release()
@@ -292,6 +294,7 @@ class Quicksort:
             bugfile.write(str(curquerystackvalue)+'\n')
             bugfile.write('Response for this query has already been recorded\n\n')
             f.write('Response for this query has already been recorded\n\n')
+            f.write('\n')
             f.close()
             bugfile.close()
             lock.release()
@@ -361,19 +364,51 @@ class Quicksort:
         butler.algorithms.set(key='queryqueuesallqs', value=queryqueuesallqs)
         butler.algorithms.set(key='waitingforresponse', value=waitingforresponse)
         #butler.algorithms.set(key='wait', value=False)
+
+        f.write('arrlist:\n')
+        for x in arrlist:
+            f.write(str(x)+'\n')
+
+        f.write('Query queues:\n')
+        for l1 in queryqueuesallqs:
+            for l2 in l1:
+                f.write(str([l2[0],l2[1]])+', ')
+            f.write('\n')
+
+        f.write('waitingforresponse:\n')
+        cd = 0
+        for d in waitingforresponse:
+            f.write(str(cd)+'\n')
+            cd = cd+1
+            if d=={}:
+                continue
+            for k in d.keys():
+                f.write('('+k+'), ')
+            f.write('\n')
+
+        f.write('Stack:\n')
+        cd = 0
+        for l in stackparametersallqs:
+            f.write(str(cd)+'\n')
+            cd = cd+1
+            for k in l.keys():
+                v = l[k]
+                f.write('[l:'+str(v['l'])+',h:'+str(v['h'])+',count:'+str(v['count'])+',smaller:'+str(v['smallerthanpivot'])+',larger:'+str(v['largerthanpivot'])+',pivot:'+str(v['pivot'])+']\n')
         
+        f.write('\n')
         f.close()
         bugfile.close()
 
         f = open('Queries.log','a')
-        f.write('QS ' + str([left_id,right_id,winner_id])+'\n')
+        f.write('QS ' + str([quicksort_data[0],left_id,right_id,winner_id])+'\n')
         f.close()
 
         f = open('QuicksortArraysAnalysis.log', 'a')
         f.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n')
         f.write('arrlist:\n')
         for x in arrlist:
-            f.write(str(x)+'\n\n')
+            f.write(str(x)+'\n')
+        f.write('\n')
         f.close()
         lock.release()
         return True
