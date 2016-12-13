@@ -90,7 +90,7 @@ class Quicksort:
 
                     timepassedsincesent = cur_time - senttime
                     timepassedsincesentinsecs = timepassedsincesent.total_seconds()
-                    if timepassedsincesentinsecs > 10:
+                    if timepassedsincesentinsecs > 50:
                         query = waitingforresponse[qsid][key]
                         query[2][2] = '0'
                         queryqueuesallqs[qsid].append(query)
@@ -224,7 +224,7 @@ class Quicksort:
 
         f.write('\n')
         f.close()
-        utils.debug_print('In getQuery: Current Query ' + str(query))
+        utils.debug_print('In Quicksort getQuery: Current Query ' + str(query))
         lock.release()
         return query
 
@@ -240,7 +240,7 @@ class Quicksort:
 
         f.write('In processAnswer\n')
         f.write(str([quicksort_id, left_id, right_id, winner_id]) + '\n')
-        utils.debug_print('In processAnswer: Winner id ' + str([quicksort_id, left_id, right_id, winner_id]))
+        utils.debug_print('In Quicksort processAnswer: Winner id ' + str([quicksort_id, left_id, right_id, winner_id]))
 
         nquicksorts = butler.algorithms.get(key='nquicksorts')
         n = butler.algorithms.get(key='n')

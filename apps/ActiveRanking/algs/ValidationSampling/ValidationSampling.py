@@ -8,7 +8,7 @@ import random
 
 class ValidationSampling:
     """
-    The keys in waitingforresponse are 'id,first_item,second_item'. The id is 1, 2, or 3. The values are (id, first_item, second_item, time_sent). time_sent is set to 0 if it has been more than 10 seconds since the query was sent.
+    The keys in waitingforresponse are 'id,first_item,second_item'. The id is 1, 2, or 3. The values are (id, first_item, second_item, time_sent). time_sent is set to 0 if it has been more than 20 seconds since the query was sent.
     """
     app_id = 'ActiveRanking'
     def initExp(self, butler, n=None, params=None):
@@ -40,13 +40,13 @@ class ValidationSampling:
         for query in queryqueue:
             queryqueue3.append([query[0], query[1], [3,'0']])
 
-        butler.algorithms.set(key='VSqueryqueue', value=queryqueue+queryqueue2+queryqueue3)
+        butler.other.set(key='VSqueryqueue', value=queryqueue+queryqueue2+queryqueue3)
         butler.algorithms.set(key='VSwaitingforresponse', value={})
         return True
 
     def getQuery(self, butler, participant_uid):
         n = butler.algorithms.get(key='n')
-        queryqueue = butler.algorithms.get(key='VSqueryqueue')
+        queryqueue = butler.other.get(key='VSqueryqueue')
         waitingforresponse = butler.algorithms.get(key='VSwaitingforresponse')
 
         #for all queries in waitingforresponse, check if there are any queries that have been lying around in waitingforresponse for a long time
@@ -59,8 +59,9 @@ class ValidationSampling:
                 senttime = dateutil.parser.parse(senttimeiniso)
                 timepassedsincesent = cur_time-senttime
                 timepassedsincesentinsecs = timepassedsincesent.total_seconds()
-                if timepassedsincesentinsecs > 10:
+                if timepassedsincesentinsecs > 50:
                     #setting time to '0' indicates that the query has been added to the queue, avoid repeat additions.
+                    utils.debug_print('Validation: adding back to queue')
                     query = waitingforresponse[key]
                     query[2][1] = '0'
                     waitingforresponse[key] = query
@@ -102,18 +103,21 @@ class ValidationSampling:
         largerindexitem = max(query[0], query[1])
         waitingforresponse[str(smallerindexitem)+','+str(largerindexitem)+','+str(query[2][0])] = query
 
-        butler.algorithms.set(key='VSqueryqueue', value=queryqueue)
+        butler.other.set(key='VSqueryqueue', value=queryqueue)
         butler.algorithms.set(key='VSwaitingforresponse', value=waitingforresponse)
         f = open('VSampling.log', 'a')
         f.write('In getQuery\n')
         f.write('waitingforresponse: '+str(waitingforresponse)+'\n\n')
         f.close()
+        utils.debug_print('In Validation getQuery '+str(query))
+        #utils.debug_print('Validation sampling queryqueue')
+        #utils.debug_print(butler.other.get(key='VSqueryqueue'))
 
         return query
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
         waitingforresponse = butler.algorithms.get(key='VSwaitingforresponse')
-        queryqueue = butler.algorithms.get(key='VSqueryqueue')
+        queryqueue = butler.other.get(key='VSqueryqueue')
         f = open('VSampling.log', 'a')
         f.write('In processAnswer\n')
         f.write(str([left_id, right_id, winner_id, quicksort_data[0]]) + '\n')
@@ -151,6 +155,7 @@ class ValidationSampling:
         f.write(str([quicksort_data[0], left_id, right_id, winner_id])+'\n')
         f.close()
 
+        utils.debug_print('In Validation processAnswer '+str([left_id, right_id, winner_id, quicksort_data]))
         return True
 
     def getModel(self,butler):

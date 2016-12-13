@@ -119,12 +119,20 @@ class ActiveRanking(object):
 
     def chooseAlg(self, butler, args, alg_list, prop):
         chosen_alg = numpy.random.choice(alg_list, p=prop)
-        if chosen_alg == 'ValidationSampling':
-            prop = [p for p, a in zip(prop, alg_list) if a['alg_label'] != 'ValidationSampling']
-            prop = [p/sum(prop) for p in prop]
-            alg_list = [ai for ai in alg_list if ai['alg_label'] != 'ValidationSampling']
-            if butler.experiments.get(key='nvalidationqueries') > 3000:
-                chosen_alg = numpy.random.choice(alg_list, prop)
+        #utils.debug_print(chosen_alg)
+        if chosen_alg['alg_id'] == 'ValidationSampling':
+            l = butler.memory.lock('validation')
+            l.acquire()
+            if butler.other.get(key='VSqueryqueue') == []:
+                prop = [p for p, a in zip(prop, alg_list) if a['alg_id'] != 'ValidationSampling']
+                prop = [p/sum(prop) for p in prop]
+                alg_list = [ai for ai in alg_list if ai['alg_id'] != 'ValidationSampling']
+                chosen_alg = numpy.random.choice(alg_list, p=prop)
+                #utils.debug_print('sumeet')
+                #utils.debug_print([a['alg_id'] for a in alg_list])
+                #utils.debug_print(prop)
+                #utils.debug_print(chosen_alg)
+            l.release()
         return chosen_alg
 
 
