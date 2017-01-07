@@ -62,6 +62,8 @@ class ValidationSampling:
                 if timepassedsincesentinsecs > 50:
                     #setting time to '0' indicates that the query has been added to the queue, avoid repeat additions.
                     utils.debug_print('Validation: adding back to queue')
+                    utils.debug_print('Current time: '+str(cur_time))
+                    utils.debug_print('Sent time: '+str(senttime))
                     query = waitingforresponse[key]
                     query[2][1] = '0'
                     waitingforresponse[key] = query
@@ -156,6 +158,10 @@ class ValidationSampling:
         f.close()
 
         utils.debug_print('In Validation processAnswer '+str([left_id, right_id, winner_id, quicksort_data]))
+
+        #write everything back
+        butler.algorithms.set(key='VSwaitingforresponse', value=waitingforresponse)
+        butler.other.set(key='VSqueryqueue', value=queryqueue)
         return True
 
     def getModel(self,butler):
