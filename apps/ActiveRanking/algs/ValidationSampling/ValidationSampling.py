@@ -49,6 +49,16 @@ class ValidationSampling:
         queryqueue = butler.other.get(key='VSqueryqueue')
         waitingforresponse = butler.algorithms.get(key='VSwaitingforresponse')
 
+#        #sumeet: temporary
+#        utils.debug_print('In Validation getQuery ')
+#        butler.algorithms.set(key='VSwaitingforresponse', value={})
+#        utils.debug_print('Queryqueue = ' + str(queryqueue))
+#        f = open('DebugVSQueryQueue.txt', 'a')
+#        for query in queryqueue:
+#            f.write(str(query))
+#        f.close()
+#        
+
         #for all queries in waitingforresponse, check if there are any queries that have been lying around in waitingforresponse for a long time
         cur_time = datetime.now()
         for key in waitingforresponse:
@@ -118,6 +128,8 @@ class ValidationSampling:
         return query
 
     def processAnswer(self, butler, left_id=0, right_id=0, winner_id=0, quicksort_data=0):
+        utils.debug_print('In Validation processAnswer '+str([left_id, right_id, winner_id, quicksort_data]))
+
         waitingforresponse = butler.algorithms.get(key='VSwaitingforresponse')
         queryqueue = butler.other.get(key='VSqueryqueue')
         f = open('VSampling.log', 'a')
@@ -131,13 +143,15 @@ class ValidationSampling:
         except KeyError:
             #this means that the query response has been received from a different user maybe, and this response should be ignored. This shouldn't happen too often.
             f.write('In VS processAnswer\n')
-            f.write('Did not find in waitingforresponse' + str(left_id)+','+str(right_id)+','+str(quicksort_data[0]))
+            f.write('Did not find in waitingforresponse ' + str(left_id)+','+str(right_id)+','+str(quicksort_data[0]) + '\n\n')
             bugfile = open('Bugs.log', 'a')
             bugfile.write('In VS processAnswer\n')
-            bugfile.write('Did not find in waitingforresponse' + str(left_id)+','+str(right_id)+','+str(quicksort_data[0]))
+            bugfile.write('Did not find in waitingforresponse ' + str(left_id)+','+str(right_id)+','+str(quicksort_data[0]) + '\n\n')
             bugfile.close()
             f.close()
+            return True
 
+        utils.debug_print(query)
         del waitingforresponse[str(smallerindexitem)+','+str(largerindexitem)+','+str(quicksort_data[0])]
         
         #if this query was added to the queue again to be resent because the first response wasn't received soon, delete it from the queue - the response has been received.
@@ -156,8 +170,6 @@ class ValidationSampling:
         f = open('VSAnalysis.log', 'a')
         f.write(str([quicksort_data[0], left_id, right_id, winner_id])+'\n')
         f.close()
-
-        utils.debug_print('In Validation processAnswer '+str([left_id, right_id, winner_id, quicksort_data]))
 
         #write everything back
         butler.algorithms.set(key='VSwaitingforresponse', value=waitingforresponse)
